@@ -1,0 +1,25 @@
+- name: Update assets on manager node
+  hosts: managers
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Copy assets directory to manager nodes
+      copy:
+        src: ../assets/
+        dest: /
+- name: Stop current traefik and catnip stacks
+  hosts: managers
+  become: true
+  tasks:
+    - name: Stop catnip stack
+      command: sudo docker stack rm catnip
+    - name: Stop traefik stack
+      command: sudo docker stack rm traefik
+# - name: Restart traefik and catnip stacks
+#   hosts: managers
+#   become: true
+#   tasks:
+#     - name: Deploy traefik stack
+#       command: sudo docker stack deploy -c /stack-traefik-main.yaml traefik
+#     - name: Deploy catnip stack
+#       command: sudo docker stack deploy -c /stack-canary.yaml catnip

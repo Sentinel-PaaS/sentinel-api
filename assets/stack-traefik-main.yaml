@@ -46,6 +46,60 @@ services:
         # - traefik.http.routers.ping.tls.certresolver=le
         # - traefik.http.routers.ping.tls=true
 
+  prometheus:
+    image: prom/prometheus:v2.22.1
+    networks:
+      - traefik-public
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    deploy:
+      labels:
+      # - "traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)"
+      # - "traefik.http.routers.prometheus.service=prometheus"
+      # - "traefik.http.routers.prometheus.middlewares=prometheus-stripprefix"
+      # - "traefik.http.middlewares.prometheus-stripprefix.stripprefix.prefixes=/prometheus"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.michaelfatigati.com`)"
+      - "traefik.http.routers.prometheus.service=prometheus"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - "traefik.docker.network=traefik-public"
+      placement:
+        constraints:
+        - node.role==manager
+      restart_policy:
+        condition: on-failure
+  
+  grafana:
+    image: grafana/grafana:7.3.1
+    networks:
+      - traefik-public
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    env_file:
+      - ./grafana/config.monitoring
+    user: "104"
+    deploy:
+      labels:
+        - "traefik.http.routers.grafana.rule=Host(`grafana.michaelfatigati.com`)"
+        - "traefik.http.routers.grafana.service=grafana"
+        - "traefik.http.routers.grafana.entrypoints=web"
+        - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+        - "traefik.docker.network=traefik-public"
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
 networks:
   traefik-public:
     driver: overlay
@@ -53,8 +107,10 @@ networks:
     name: traefik-public
     # external: true
 
-# volumes:
+volumes:
 #   traefik-certificates:
+    prometheus_data: {}
+    grafana_data: {}
 
 configs:
   traefik-config:

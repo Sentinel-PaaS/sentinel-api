@@ -18,3 +18,14 @@ A platform as a service with built in canary deployments
 # Remove Infrastructure From Test
 
 1. From the root project directory, run `bash sentinel_destroy.sh`.
+
+# Monitoring configurations
+
+Currently, domains for prometheus and grafana are `prometheus.michaelfatigati.com`, and `grafana.michaelfatigati.com`, but this can be changed by pointing whatever hostname you want at the manager node, and modifying the hostname in the following places:
+- `grafana/provisioning/datasource.yml`, line 21
+- router rule for prometheus service in `stack-traefik-main.yaml`
+- router rule for grafana service in `stack-traefik-main.yaml`
+
+# Test adding a new app into the mix
+
+Use `hello_deploy.yml` ansible file to deploy a simple app via `stack-hello.yml` compose file. Now when you visit to manager node's IP address at `/hello`, you should see a page that says "hello", and this service will be added to the monitoring pages.

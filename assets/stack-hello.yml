@@ -1,0 +1,28 @@
+version: "3.7"
+
+services:
+  hello:
+    image: mfatigati/docker-simple-amd
+    # container_name: hello-aws
+    # ports:
+    #   - "3000:3000"
+    environment:
+      - ALLOWED_HOSTS=['localhost']
+    deploy:
+      mode: replicated
+      replicas: 2
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.hello-router.rule=PathPrefix(`/hello`)"
+        - "traefik.http.routers.hello-router.middlewares=hello-svc-stripprefix"
+        - "traefik.http.middlewares.hello-svc-stripprefix.stripprefix.prefixes=/hello"
+        - "traefik.http.services.hello-svc.loadbalancer.server.port=3000"
+    networks:
+      - traefik-public
+  
+networks:
+  traefik-public:
+    driver: overlay
+    attachable: true
+    name: traefik-public
+    external: true

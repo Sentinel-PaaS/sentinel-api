@@ -1,0 +1,16 @@
+---
+- name: Update hello app asset on manager node
+  hosts: managers
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Copy assets directory to manager nodes
+      copy:
+        src: ../assets/stack-hello.yml
+        dest: /
+- name: Deploy hello app 
+  hosts: managers
+  become: true
+  tasks:
+    - name: Deploy hello app stack
+      command: sudo docker stack deploy -c /stack-hello.yml traefik
