@@ -1,0 +1,45 @@
+# docker stack deploy -c stack-canary.yaml catnip
+
+version: "3.7"
+
+services:
+  production:
+    image: dsessler7/catnip:production
+    networks:
+      - traefik-public
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        failure_action: rollback
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.app_router.rule=Path(`/`)
+        - traefik.http.routers.app_router.entrypoints=web
+        # - traefik.http.routers.app_router.tls.certresolver=le
+
+        # Canary approach
+        - traefik.http.routers.app_router.service=canary@file
+        - traefik.http.services.production_svc.loadbalancer.server.port=5000
+  canary:
+    image: dsessler7/catnip:canary2
+    networks:
+      - traefik-public
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - traefik.enable=true
+        - traefik.http.services.canary_svc.loadbalancer.server.port=5000
+networks:
+  traefik-public:
+    driver: overlay
+    attachable: true
+    name: traefik-public
+    external: true
