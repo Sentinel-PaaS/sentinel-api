@@ -1,0 +1,62 @@
+# docker stack deploy -c stack-traefik-main.yaml traefik --prune
+
+version: '3.7'
+
+services:
+  traefik:
+    image: traefik:2.6
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    configs:
+      # Static config
+      - source: traefik-config
+        target: /etc/traefik/traefik.yaml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./conf.d:/conf.d
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+
+        # - traefik.http.routers.traefik.rule=PathPrefix(`/test`)
+        # - traefik.http.routers.t.service=api@internal
+        # - traefik.http.routers.t.tls.certresolver=ls
+        - traefik.http.routers.traefik.entrypoints=web
+        - traefik.http.routers.traefik.service=api@internal
+        # - traefik.http.services.traefik.loadbalancer.server.port=888
+
+        # - traefik.http.routers.t.middlewares=authtraefik
+        # - traefik.http.middlewares.authtraefik.basicauth.users=admin:<bcrypted password string>
+
+        # - traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`) # global redirect to https
+        # - traefik.http.routers.http-catchall.entrypoints=web
+        # - traefik.http.routers.http-catchall.middlewares=redirect-to-https
+        # - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+
+        # - traefik.http.routers.ping.rule=Host(`traefik.example.com`) && Path(`/ping`)
+        # - traefik.http.routers.ping.service=ping@internal
+        # - traefik.http.routers.ping.tls.certresolver=le
+        # - traefik.http.routers.ping.tls=true
+
+networks:
+  traefik-public:
+    driver: overlay
+    attachable: true
+    name: traefik-public
+    # external: true
+
+# volumes:
+#   traefik-certificates:
+
+configs:
+  traefik-config:
+    name: traefik-config
+    file: ./traefik.yaml

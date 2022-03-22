@@ -1,0 +1,9 @@
+---
+- name: Deploy application 
+  hosts: managers
+  become: true
+  tasks:
+    - name: Deploy traefik stack
+      command: sudo docker stack deploy -c /stack-traefik-main.yaml traefik
+    - name: Deploy catnip stack
+      command: sudo docker stack deploy -c /stack-canary.yaml catnip

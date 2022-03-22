@@ -1,0 +1,40 @@
+### swarm_init.yml
+---
+- name: Install Docker and Docker Compose
+  hosts: all
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Update yum package manager
+      command: yum update -y
+    - name: Install Docker
+      command: yum install docker -y
+    - name: Enable docker
+      command: systemctl enable docker
+    - name: Start docker
+      command: systemctl start docker
+    # this is a convienience for when we have to ssh into the nodes.
+    - name: Add sudo permissions for default ec2-user with docker
+      command: sudo usermod -aG docker ec2-user
+- name: Init Swarm Manager
+  hosts: managers
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Swarm Init
+      command: docker swarm init --advertise-addr {{ hostvars[groups['managers'][0]].manager_private_ip }}
+    - name: Copy assets directory to manager nodes
+      copy:
+        src: ../assets/
+        dest: /
+      # If we are dynamically scaling we should store these values somewhere. Maybe in out DB? Registered variables only persist for the life time of this play.
+    - name: Get Worker Token
+      command: docker swarm join-token worker -q
+      register: worker_token
+    - name: Show Worker Token
+      debug: var=worker_token.stdout
+    - name: Manager Token
+      command: docker swarm join-token manager -q
+      register: manager_token
+    - name: Show Manager Token
+      debug: var=manager_token.stdout

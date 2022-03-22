@@ -1,0 +1,11 @@
+---
+- name: Update Stack 
+  hosts: managers
+  become: true
+  tasks:
+    - name: Copy assets directory to manager nodes
+      copy:
+        src: ../assets/stack-production.yaml
+        dest: /
+    - name: Deploy stack
+      command: sudo docker stack deploy -c /stack-production.yaml vote 

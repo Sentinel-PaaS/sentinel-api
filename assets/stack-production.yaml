@@ -1,0 +1,31 @@
+# docker stack deploy -c stack-production.yaml catnip
+
+version: "3.7"
+
+services:
+  production:
+    image: dsessler7/catnip:production
+    networks:
+      - traefik-public
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        failure_action: rollback
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.app_router.rule=Path(`/`)
+        - traefik.http.routers.app_router.entrypoints=web
+        - traefik.http.services.production_svc.loadbalancer.server.port=5000
+networks:
+  traefik-public:
+    driver: overlay
+    attachable: true
+    name: traefik-public
+    external: true
