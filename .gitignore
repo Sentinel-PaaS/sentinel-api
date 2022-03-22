@@ -5,4 +5,5 @@ terraform.tfstate.backup
 .env
 inventory/
 co_auth_commit.sh
-
+node_modules
+package-lock.json

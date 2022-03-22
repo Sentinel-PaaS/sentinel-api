@@ -1,0 +1,28 @@
+{
+  "name": "sentinel-api",
+  "version": "1.0.0",
+  "description": "Sentinel's API",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sentinel-PaaS/sentinel-api.git"
+  },
+  "author": "Drew Sessler, Brendan Leal, Sam Lipari, and Michael Fatigati",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Sentinel-PaaS/sentinel-api/issues"
+  },
+  "homepage": "https://github.com/Sentinel-PaaS/sentinel-api#readme",
+  "dependencies": {
+    "express": "^4.17.3",
+    "node-ansible": "^0.5.5",
+    "nodemon": "^2.0.15"
+  }
+}

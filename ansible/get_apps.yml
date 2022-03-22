@@ -1,0 +1,12 @@
+############################################################################################
+---
+  - name: Get list of running apps
+    hosts: managers
+    become: true
+    gather_facts: False
+    tasks:
+      - name: Get Running Apps
+        command: "docker service ls --format '{{ '{{' }}.Name{{ '}}' }}: {{ '{{' }}.Mode{{ '}}' }} {{ '{{' }}.Replicas{{ '}}' }}'"
+        register: apps
+      - name: Show Running Apps
+        debug: var=apps.stdout
