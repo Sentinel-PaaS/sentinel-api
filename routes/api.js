@@ -8,6 +8,9 @@ router.get('/apps', appsController.list);
 // Deploy a new app
 router.post('/apps', appsController.deploy);
 
+// Deploy a canary
+router.post('/apps/canary/deploy', appsController.canaryDeploy);
+
 
   // let playbook = new Ansible.Playbook().playbook('ansible/get_apps');
   // playbook.inventory('inventory/hosts');
