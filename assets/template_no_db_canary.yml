@@ -1,0 +1,44 @@
+---
+version: "3.7"
+
+services:
+  production:
+    image: {{ productionImageName }}
+    networks:
+      - traefik-public
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        failure_action: rollback
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.{{ appName }}_rtr.rule=Host(`{{ hostName }}`)
+        - traefik.http.routers.{{ appName }}_rtr.entrypoints=web
+        # - traefik.http.routers.app_router.tls.certresolver=le
+        # the port listed here MUST be the internal post listed in the image
+        - traefik.http.services.{{ appName }}_production_svc.loadbalancer.server.port={{ productionPort }}
+        # Canary approach
+        - traefik.http.routers.{{ appName }}_rtr.service={{ appName }}_weighted_svc@file
+  canary:
+    image: {{ canaryImageName }}
+    networks:
+      - traefik-public
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - traefik.enable=true
+        - traefik.http.services.{{ appName }}_canary_svc.loadbalancer.server.port={{ canaryPort }}
+networks:
+  traefik-public:
+    driver: overlay
+    attachable: true
+    name: traefik-public
+    external: true

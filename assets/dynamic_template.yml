@@ -1,0 +1,9 @@
+http:
+  services:
+    {{ appName }}_weighted_svc:
+      weighted:
+        services:
+          - name: {{ appName }}_production_svc@docker
+            weight: 2
+          - name: {{ appName }}_canary_svc@docker
+            weight: 1
