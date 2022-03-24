@@ -1,0 +1,9 @@
+---
+- name: Transfer dynamic config to manager
+  hosts: managers
+  become: true
+  tasks:
+    - name: Populate dynamic config template and transfer
+      template:
+        src: ../assets/dynamic_template.yml
+        dest: /conf.d/{{ appName }}_dynamic.yml

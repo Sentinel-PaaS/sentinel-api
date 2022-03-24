@@ -18,10 +18,10 @@
     - name: Populate dual compose template and transfer
       template:
         src: ../assets/template_no_db_canary.yml
-        dest: /{{ appName }}_no_db_canary.yml
+        dest: /{{ appName }}_canary.yml
 - name: Deploy application 
   hosts: managers
   become: true
   tasks:
     - name: Deploy new service stack
-      command: sudo docker stack deploy -c /{{ appName }}_no_db_canary.yml "{{ appName }}"
+      command: sudo docker stack deploy -c /{{ appName }}_canary.yml "{{ appName }}"

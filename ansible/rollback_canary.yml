@@ -1,0 +1,13 @@
+---
+- name: Turn off traffic to canary by redeploying original production stack
+  hosts: managers
+  become: true
+  tasks:
+    - name: Deploy original production stack
+      command: sudo docker stack deploy -c /{{ appName }}_production.yml "{{ appName }}"
+- name: Remove canary service
+  hosts: managers
+  become: true
+  tasks:
+    - name: Remove canary service
+      command: sudo docker service rm {{ appName }}_canary

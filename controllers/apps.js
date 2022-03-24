@@ -30,8 +30,8 @@ const manager1 = new Docker({
 });
 
 module.exports = {
-  list(req, res, next) {
-    manager1.listServices().then((successResult) => {
+  async list(req, res, next) {
+    await manager1.listServices().then((successResult) => {
       console.log(successResult);
       res.status(200).json(successResult);
     }).catch((error) => {
@@ -118,4 +118,65 @@ module.exports = {
 
     // manager1.createService(serviceOptions);
   },
+
+  async adjustTraffic(req, res, next) {
+    let appName = req.body.appName;
+    let canaryWeight = parseInt(req.body.newWeight, 10);
+    let productionWeight = 100 - canaryWeight;
+
+    let playbook = new Ansible.Playbook().playbook('ansible/adjust_traffic').variables({
+      appName,
+      canaryWeight,
+      productionWeight,
+    });
+    playbook.inventory('inventory/hosts');
+
+    await playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("traffic adjusted");
+    }).catch((error) => {
+      console.error(error);
+    });
+  },
+
+  async canaryPromote(req, res, next) {
+    let appName = req.body.appName;
+    let services = await manager1.listServices();
+    console.log(services);
+    // let canaryImage = services.
+  },
+
+  async canaryRollback(req, res, next) {
+    let appName = req.body.appName;
+
+    let playbook = new Ansible.Playbook().playbook('ansible/rollback_canary').variables({
+      appName,
+    });
+
+    await playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("rollback complete");
+    }).catch((error) => {
+      console.error(error);
+    });
+  },
+
+  async deleteApp(req, res, next) {
+    let appName = req.params.appName;
+
+    let playbook = new Ansible.Playbook().playbook('ansible/delete_app').variables({
+      appName,
+    });
+
+    await playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("app deleted");
+    }).catch((error) => {
+      console.error(error);
+    });
+  },
+
 };
