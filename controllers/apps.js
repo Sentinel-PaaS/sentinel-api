@@ -21,7 +21,7 @@ console.log(hosts);
 // let managerNodes = [];
 
 const manager1 = new Docker({
-  host: '13.58.254.199',
+  host: '54.237.226.83',
   port: process.env.DOCKER_PORT || 2375,
   // ca: fs.readFileSync('ca.pem'),
   // cert: fs.readFileSync('cert.pem'),
@@ -30,8 +30,8 @@ const manager1 = new Docker({
 });
 
 module.exports = {
-  list(req, res, next) {
-    manager1.listServices().then((successResult) => {
+  async list(req, res, next) {
+    await manager1.listServices().then((successResult) => {
       console.log(successResult);
       res.status(200).json(successResult);
     }).catch((error) => {
@@ -41,6 +41,8 @@ module.exports = {
   },
 
   async canaryDeploy(req, res, next) {
+    // let appName = req.params.appName
+
     let productionImageNameValue = "mfatigati/docker-simple-amd";
     let hostNameValue = "canary.michaelfatigati.com";
     let appNameValue = "hello-simple";
@@ -118,4 +120,67 @@ module.exports = {
 
     // manager1.createService(serviceOptions);
   },
+
+  async adjustTraffic(req, res, next) {
+    let appName = req.params.appName;
+    let canaryWeight = parseInt(req.body.newWeight, 10);
+    let productionWeight = 100 - canaryWeight;
+
+    let playbook = new Ansible.Playbook().playbook('ansible/adjust_traffic').variables({
+      appName,
+      canaryWeight,
+      productionWeight,
+    });
+    playbook.inventory('inventory/hosts');
+
+    await playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("traffic adjusted");
+    }).catch((error) => {
+      console.error(error);
+    });
+  },
+
+  async canaryPromote(req, res, next) {
+    let appName = req.params.appName;
+    let services = await manager1.listServices();
+    console.log(services);
+    // let canaryImage = services.
+  },
+
+  async canaryRollback(req, res, next) {
+    let appName = req.params.appName;
+
+    let playbook = new Ansible.Playbook().playbook('ansible/rollback_canary').variables({
+      appName,
+    });
+    playbook.inventory('inventory/hosts');
+
+    playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("rollback complete");
+    }).catch((error) => {
+      console.error(error);
+    });
+  },
+
+  async deleteApp(req, res, next) {
+    let appName = req.params.appName;
+
+    let playbook = new Ansible.Playbook().playbook('ansible/delete_app').variables({
+      appName,
+    });
+    playbook.inventory('inventory/hosts');
+
+    playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("app deleted");
+    }).catch((error) => {
+      console.error(error);
+    });
+  },
+
 };

@@ -9,8 +9,19 @@ router.get('/apps', appsController.list);
 router.post('/apps', appsController.deploy);
 
 // Deploy a canary
-router.post('/apps/canary/deploy', appsController.canaryDeploy);
+router.post('/apps/:appName/canary', appsController.canaryDeploy);
 
+// Change canary traffic splitting weights
+router.put('/apps/:appName/canary', appsController.adjustTraffic);
+
+// Promote canary version
+router.post('/apps/:appName/promote', appsController.canaryPromote);
+
+// Rollback canary
+router.post('/apps/:appName/rollback', appsController.canaryRollback);
+
+// Delete application
+router.delete('/apps/:appName', appsController.deleteApp);
 
   // let playbook = new Ansible.Playbook().playbook('ansible/get_apps');
   // playbook.inventory('inventory/hosts');

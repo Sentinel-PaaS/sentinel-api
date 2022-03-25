@@ -1,0 +1,7 @@
+---
+- name: Delete app
+  hosts: managers
+  become: true
+  tasks:
+    - name: Remove app stack
+      command: sudo docker stack rm {{ appName }}
