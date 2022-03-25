@@ -9,16 +9,16 @@ router.get('/apps', appsController.list);
 router.post('/apps', appsController.deploy);
 
 // Deploy a canary
-router.post('/apps/canary/deploy', appsController.canaryDeploy);
+router.post('/apps/:appName/canary', appsController.canaryDeploy);
 
 // Change canary traffic splitting weights
-router.post('/apps/canary/traffic', appsController.adjustTraffic);
+router.put('/apps/:appName/canary', appsController.adjustTraffic);
 
 // Promote canary version
-router.post('/apps/canary/promote', appsController.canaryPromote);
+router.post('/apps/:appName/promote', appsController.canaryPromote);
 
 // Rollback canary
-router.post('/apps/canary/rollback', appsController.canaryRollback);
+router.post('/apps/:appName/rollback', appsController.canaryRollback);
 
 // Delete application
 router.delete('/apps/:appName', appsController.deleteApp);
