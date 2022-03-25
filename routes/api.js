@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const appsController = require('../controllers/apps');
+const clusterController = require('../controllers/cluster');
 
+// Routes for apps controller
 // Get list of all running apps
 router.get('/apps', appsController.list);
 
@@ -22,6 +24,12 @@ router.post('/apps/:appName/rollback', appsController.canaryRollback);
 
 // Delete application
 router.delete('/apps/:appName', appsController.deleteApp);
+
+// Routes for cluster controller
+// Initialize cluster
+router.post('/cluster/initialize', clusterController.init);
+
+router.delete('/destroy', clusterController.destroy);
 
   // let playbook = new Ansible.Playbook().playbook('ansible/get_apps');
   // playbook.inventory('inventory/hosts');
