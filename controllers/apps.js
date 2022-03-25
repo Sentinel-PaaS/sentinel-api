@@ -5,7 +5,7 @@ const fs = require('fs');
 const ini = require('ini');
 // const path = require("path");
 
-const hosts = ini.parse(fs.readFileSync('./inventory/hosts', 'utf-8'));
+const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
 console.log(hosts);
 
 // function createNewDocker(hostAddress) {
@@ -21,7 +21,7 @@ console.log(hosts);
 // let managerNodes = [];
 
 const manager1 = new Docker({
-  host: '54.237.226.83',
+  host: '3.145.27.235',
   port: process.env.DOCKER_PORT || 2375,
   // ca: fs.readFileSync('ca.pem'),
   // cert: fs.readFileSync('cert.pem'),
@@ -40,7 +40,7 @@ module.exports = {
     });
   },
 
-  async canaryDeploy(req, res, next) {
+  canaryDeploy(req, res, next) {
     // let appName = req.params.appName
 
     let productionImageNameValue = "mfatigati/docker-simple-amd";
@@ -58,7 +58,7 @@ module.exports = {
       canaryImageName: canaryImageNameValue,
       canaryPort: canaryPortValue
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     let promise = playbook.exec();
     // console.log(successResult);
@@ -71,7 +71,7 @@ module.exports = {
     });
   },
 
-  async deploy(req, res, next) {
+  deploy(req, res, next) {
     // let appName = req.body.appName;
     // let appImage = req.body.appImage;
     // let hostName = req.body.hostName;
@@ -88,7 +88,7 @@ module.exports = {
       appName: appNameValue,
       productionPort: productionPortValue
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     let promise = playbook.exec();
     // console.log(successResult);
@@ -99,26 +99,6 @@ module.exports = {
     }).catch((error) => {
       console.error(error);
     });
-
-    // if (databaseImage) {
-    //   const networkOptions = {
-    //     Name: "db_network",
-    //     Driver: "overlay",
-    //     Attachable: true
-    //   };
-    //   try {
-    //     await manager1.createNetwork(networkOptions);
-    //   } catch (err) {
-    //     console.error(err);
-    //   }
-    //   deployDatabase(databaseImage); // this function still needs to be written
-    // }
-
-    // const serviceOptions = {
-    //   Name: appName,
-    // };
-
-    // manager1.createService(serviceOptions);
   },
 
   async adjustTraffic(req, res, next) {
@@ -131,7 +111,7 @@ module.exports = {
       canaryWeight,
       productionWeight,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     await playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
@@ -149,13 +129,13 @@ module.exports = {
     // let canaryImage = services.
   },
 
-  async canaryRollback(req, res, next) {
+  canaryRollback(req, res, next) {
     let appName = req.params.appName;
 
     let playbook = new Ansible.Playbook().playbook('ansible/rollback_canary').variables({
       appName,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
@@ -166,13 +146,13 @@ module.exports = {
     });
   },
 
-  async deleteApp(req, res, next) {
+  deleteApp(req, res, next) {
     let appName = req.params.appName;
 
     let playbook = new Ansible.Playbook().playbook('ansible/delete_app').variables({
       appName,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
