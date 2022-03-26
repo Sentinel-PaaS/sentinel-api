@@ -5,8 +5,8 @@ const fs = require('fs');
 const ini = require('ini');
 // const path = require("path");
 
-const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
-console.log(hosts);
+// const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
+// console.log(hosts);
 
 // function createNewDocker(hostAddress) {
 //   return new Docker({
