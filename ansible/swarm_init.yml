@@ -27,6 +27,8 @@
       copy:
         src: ../assets/
         dest: /
+    - name: Restrict access to TLS cert document (transferred over in prior command)
+      command: chmod 600 /letsencrypt/acme.json
       # If we are dynamically scaling we should store these values somewhere. Maybe in out DB? Registered variables only persist for the life time of this play.
     - name: Get Worker Token
       command: docker swarm join-token worker -q

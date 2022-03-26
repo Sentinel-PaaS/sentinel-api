@@ -20,7 +20,10 @@ services:
       labels:
         - traefik.enable=true
         - traefik.http.routers.{{ appName }}_rtr.rule=Host(`{{ hostName }}`)
-        - traefik.http.routers.{{ appName }}_rtr.entrypoints=web
+        # - traefik.http.routers.{{ appName }}_rtr.entrypoints=web
+        - traefik.http.routers.{{ appName }}_rtr.entrypoints=websecure
+        - traefik.http.routers.{{ appName }}_rtr.tls=true
+        - traefik.http.routers.{{ appName }}_rtr.tls.certresolver=myresolver
         # - traefik.http.routers.app_router.tls.certresolver=le
         # the port listed here MUST be the internal post listed in the image
         - traefik.http.services.{{ appName }}_production_svc.loadbalancer.server.port={{ productionPort }}

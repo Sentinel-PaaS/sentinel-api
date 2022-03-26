@@ -21,7 +21,7 @@ console.log(hosts);
 // let managerNodes = [];
 
 const manager1 = new Docker({
-  host: '3.129.59.123',
+  host: '3.140.246.188',
   port: process.env.DOCKER_PORT || 2375,
   // ca: fs.readFileSync('ca.pem'),
   // cert: fs.readFileSync('cert.pem'),
@@ -92,7 +92,7 @@ module.exports = {
     // let appName = req.params.appName
 
     let productionImageNameValue = "mfatigati/docker-simple-amd";
-    let hostNameValue = "canary.michaelfatigati.com";
+    let hostNameValue = "hello-canary.michaelfatigati.com";
     let appNameValue = "hello-simple";
     let productionPortValue = 3000;
     let canaryImageNameValue = "mfatigati/docker-canary-amd";

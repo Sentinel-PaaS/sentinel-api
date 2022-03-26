@@ -16,7 +16,8 @@ services:
         target: /etc/traefik/traefik.yaml
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./conf.d:/conf.d
+      - /conf.d:/conf.d
+      - /letsencrypt/acme.json:/assets/letsencrypt/acme.json
     networks:
       - traefik-public
     deploy:
@@ -26,12 +27,13 @@ services:
       labels:
         - traefik.enable=true
 
-        # - traefik.http.routers.traefik.rule=PathPrefix(`/test`)
-        # - traefik.http.routers.t.service=api@internal
-        # - traefik.http.routers.t.tls.certresolver=ls
-        - traefik.http.routers.traefik.entrypoints=web
+        - traefik.http.routers.traefik.rule=Host(`traefik.michaelfatigati.com`)
+        # - traefik.http.routers.traefik.entrypoints=web
+        - traefik.http.routers.traefik.entrypoints=websecure
         - traefik.http.routers.traefik.service=api@internal
-        # - traefik.http.services.traefik.loadbalancer.server.port=888
+        - traefik.http.routers.traefik.tls=true
+        - traefik.http.routers.traefik.tls.certresolver=myresolver
+        - traefik.http.services.traefik.loadbalancer.server.port=8080
 
         # - traefik.http.routers.t.middlewares=authtraefik
         # - traefik.http.middlewares.authtraefik.basicauth.users=admin:<bcrypted password string>
