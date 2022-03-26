@@ -4,6 +4,6 @@ http:
       weighted:
         services:
           - name: {{ appName }}_production_svc@docker
-            weight: {{ productionWeight|default(95) }}
+            weight: {{ productionWeight|default(2) }}
           - name: {{ appName }}_canary_svc@docker
-            weight: {{ canaryWeight|default(5) }}
+            weight: {{ canaryWeight|default(1) }}

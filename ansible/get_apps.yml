@@ -1,21 +1,13 @@
-############################################################################################
 ---
-  - name: Get list of running apps
-    hosts: managers
-    # become: true
-    gather_facts: False
-    tasks:
-      - name: Get Running Apps
-        command: "sudo docker service ls --format '{{ '{{' }}.Name{{ '}}' }}: {{ '{{' }}.Mode{{ '}}' }} {{ '{{' }}.Replicas{{ '}}' }}'"
-        register: apps
-      # - name: Copy output to file
-      #   local_action:
-      #     module: lineinfile
-      #     dest: apps_list.json
-      #     line: '{{ apps.stdout | to_nice_json }}'
-      #     create: yes
-      - name: Show Running Apps
-        debug:
-          msg: "{{apps.stdout | to_json}}"
-        # debug:
-        #   msg: "{{apps.json | list}}"
+- name: Get list of running apps
+  hosts: managers
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Get Running Apps
+      command: "sudo docker service ls --format  '{{ '{{' }}json .Name{{ '}}' }}}}'"
+      register: apps
+    - name: Show Running Apps
+      debug:
+        msg: "apps.stout | to_json"
+        # "{{apps.stdout | to_json}}"
