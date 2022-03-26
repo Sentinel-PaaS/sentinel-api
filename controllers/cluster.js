@@ -5,7 +5,7 @@ const { spawn } = require("child_process");
 
 // Initialize Terraform
 function initializeTerraform(req, res, next) {
-  const terraformInit = spawn("terraform", ["-chdir=./terraform", "init", "-input=false"]);
+  const terraformInit = spawn("sudo", ["terraform", "-chdir=./terraform", "init", "-input=false"]);
   terraformInit.stdout.on("data", data => {
     console.log(`stdout: ${data}`);
   });
@@ -27,7 +27,7 @@ function initializeTerraform(req, res, next) {
 
 // Launch initial infrastructure
 function applyTerraform(req, res, next) {
-  const terraformApply = spawn("terraform", ["-chdir=./terraform", "apply", "-input=false", "-auto-approve"]);
+  const terraformApply = spawn("sudo", ["terraform", "-chdir=./terraform", "apply", "-input=false", "-auto-approve"]);
   terraformApply.stdout.on("data", data => {
     console.log(`stdout: ${data}`);
   });
@@ -71,7 +71,7 @@ module.exports = {
   },
 
   destroy(req, res, next) {
-    const terraformDestroy = spawn("terraform", ["-chdir=./terraform", "destroy", "-auto-approve"]);
+    const terraformDestroy = spawn("sudo", ["terraform", "-chdir=./terraform", "destroy", "-auto-approve"]);
     terraformDestroy.stdout.on("data", data => {
       console.log(`stdout: ${data}`);
     });

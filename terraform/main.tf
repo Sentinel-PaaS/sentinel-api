@@ -8,7 +8,7 @@ resource "aws_instance" "manager1" {
   ami                    = var.ami
   instance_type          = var.instance_type
   key_name               = var.key_name
-  vpc_security_group_ids = ["${aws_security_group.sgswarm.id}", "${aws_security_group.allow_http.id}", "${aws_security_group.ssh.id}", "${aws_security_group.traefik_dashboard.id}"]
+  vpc_security_group_ids = ["${aws_security_group.tf_sgswarm.id}", "${aws_security_group.tf_allow_http.id}", "${aws_security_group.tf_ssh.id}", "${aws_security_group.tf_traefik_dashboard.id}"]
   tags = {
     Name = "tf manager 1"
   }
@@ -17,7 +17,7 @@ resource "aws_instance" "worker1" {
   ami                    = var.ami
   instance_type          = var.instance_type
   key_name               = var.key_name
-  vpc_security_group_ids = ["${aws_security_group.sgswarm.id}", "${aws_security_group.ssh.id}"]
+  vpc_security_group_ids = ["${aws_security_group.tf_sgswarm.id}", "${aws_security_group.tf_ssh.id}"]
   tags = {
     Name = "tf worker 1"
   }
@@ -26,7 +26,7 @@ resource "aws_instance" "worker2" {
   ami                    = var.ami
   instance_type          = var.instance_type
   key_name               = var.key_name
-  vpc_security_group_ids = ["${aws_security_group.sgswarm.id}", "${aws_security_group.ssh.id}"]
+  vpc_security_group_ids = ["${aws_security_group.tf_sgswarm.id}", "${aws_security_group.tf_ssh.id}"]
   tags = {
     Name = "tf worker 2"
   }

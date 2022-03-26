@@ -1,9 +1,9 @@
 ### security-groups.tf
 # Port for SSH
-resource "aws_security_group" "ssh" {
-  name = "ssh"
+resource "aws_security_group" "tf_ssh" {
+  name = "tf_ssh"
   tags = {
-    Name = "ssh"
+    Name = "tf_ssh"
   }
   ingress {
     from_port   = 22
@@ -20,10 +20,10 @@ resource "aws_security_group" "ssh" {
 }
 
 # Port for Traefik Dashboard
-resource "aws_security_group" "traefik_dashboard" {
-  name = "traefik_dashboard"
+resource "aws_security_group" "tf_traefik_dashboard" {
+  name = "tf_traefik_dashboard"
   tags = {
-    Name = "traefik_dashboard"
+    Name = "tf_traefik_dashboard"
   }
   ingress {
     from_port   = 8080
@@ -40,10 +40,10 @@ resource "aws_security_group" "traefik_dashboard" {
 }
 
 # Ports for Docker Swarm
-resource "aws_security_group" "sgswarm" {
-  name = "sgswarm"
+resource "aws_security_group" "tf_sgswarm" {
+  name = "tf_sgswarm"
   tags = {
-    Name = "sgswarm"
+    Name = "tf_sgswarm"
   }
 
   # Inbound ports for Docker Swarm
@@ -126,8 +126,8 @@ resource "aws_security_group" "sgswarm" {
 }
 
 # HTTP/HTTPS
-resource "aws_security_group" "allow_http" {
-  name        = "allow_http"
+resource "aws_security_group" "tf_allow_http" {
+  name        = "tf_allow_http"
   description = "Allow HTTP/HTTPS inbound traffic"
 
   ingress {
@@ -139,6 +139,27 @@ resource "aws_security_group" "allow_http" {
   ingress {
     from_port   = 443
     to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# THIS WILL BE REMOVED WHEN WE PUT A REVERSE PROXY IN PLACE
+# Port 3000 for Express server
+resource "aws_security_group" "tf_express" {
+  name = "tf_express"
+  tags = {
+    Name = "tf_express"
+  }
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
