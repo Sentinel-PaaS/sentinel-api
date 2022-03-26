@@ -1,19 +1,19 @@
 ---
-- name: Transfer a template to the manager
-  hosts: managers
-  become: true
-  # vars:
-  #   imageName: "{{ imageNameToTemplate }}"
-  #   hostName: "{{ hostNameToTemplate }}"
-  #   appName: "{{ appNameToTemplate }}"
-  tasks:
-    - name: Populate template and transfer to manager
-      template:
-        src: ../assets/template_no_db.yml
-        dest: /{{ appName }}_production.yml
-- name: Deploy application 
-  hosts: managers
-  become: true
-  tasks:
-    - name: Deploy new service stack
-      command: sudo docker stack deploy -c /{{ appName }}_production.yml "{{ appName }}"
+  - name: Transfer a template to the manager
+    hosts: managers
+    become: true
+    # vars:
+    #   imageName: "{{ imageNameToTemplate }}"
+    #   hostName: "{{ hostNameToTemplate }}"
+    #   appName: "{{ appNameToTemplate }}"
+    tasks:
+      - name: Populate template and transfer to manager
+        template:
+          src: ../assets/template_no_db.yml
+          dest: /{{ appName }}_production.yml
+  - name: Deploy application 
+    hosts: managers
+    become: true
+    tasks:
+      - name: Deploy new service stack
+        command: sudo docker stack deploy -c /{{ appName }}_production.yml "{{ appName }}"

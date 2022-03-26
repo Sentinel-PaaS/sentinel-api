@@ -5,10 +5,13 @@ const appsController = require('../controllers/apps');
 // Get list of all running apps
 router.get('/apps', appsController.list);
 
+// Inspect the status of a particular service
+router.get('/apps/:appName', appsController.inspect);
+
 // Deploy a new app
 router.post('/apps', appsController.deploy);
 
-// Deploy a canary
+// Deploy a canary (currently works with just `/api/apps/randomApp/canary`)
 router.post('/apps/:appName/canary', appsController.canaryDeploy);
 
 // Change canary traffic splitting weights

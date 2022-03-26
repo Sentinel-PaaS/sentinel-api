@@ -21,7 +21,7 @@ console.log(hosts);
 // let managerNodes = [];
 
 const manager1 = new Docker({
-  host: '54.237.226.83',
+  host: '3.129.59.123',
   port: process.env.DOCKER_PORT || 2375,
   // ca: fs.readFileSync('ca.pem'),
   // cert: fs.readFileSync('cert.pem'),
@@ -29,16 +29,64 @@ const manager1 = new Docker({
   version: 'v1.25' // required when Docker >= v1.13, https://docs.docker.com/engine/api/version-history/
 });
 
+function getServices() {
+  return new Promise((resolve, reject) => {
+    manager1.listServices().then(success => {
+      return success;
+    }).catch(err => reject(err));
+  })
+}
+
 module.exports = {
-  async list(req, res, next) {
-    await manager1.listServices().then((successResult) => {
+  list(req, res, next) {
+    manager1.listServices().then((successResult) => {
       console.log(successResult);
+      successResult = successResult.map(record => {
+        return {
+          serviceName: record.Spec.Name,
+          serviceID: record.ID,
+        }
+      });
       res.status(200).json(successResult);
     }).catch((error) => {
       console.error(error);
       res.status(500).json({ error });
+    })},
+
+  async inspect(req, res, next) {
+    // use listServices to get container ids, as well as whether there is a canary
+    // use listContainers to get health of the containers
+
+    let serviceName = req.params.appName;
+    let regex = /.*(?=_)/
+    // get the part of the name prior to "_production", to match this against any canaries
+    serviceNameFirstPart = serviceName.match(regex)[0]
+    let services = await manager1.listServices()
+    
+    services = services.filter(record => {
+      let firstPart = record.Spec.Name.match(regex)[0]
+      return firstPart === serviceNameFirstPart;
     });
-  },
+    services = services.map(record => {
+      return {
+        serviceName: record.Spec.Name,
+        serviceID: record.ID,
+        serviceReplicas: record.Spec.Mode.Replicated.Replicas
+      }
+    })
+
+    let containers = await manager1.listContainers();
+
+    services.forEach(service => {
+      containers.forEach(record => {
+        if (record.Labels['com.docker.swarm.service.id'] === service.serviceID) {
+          service.serviceState = `${record.State}: ${record.Status}`
+        }
+      })
+    })
+    console.log(services);
+    res.json(services)
+    },
 
   async canaryDeploy(req, res, next) {
     // let appName = req.params.appName
