@@ -22,12 +22,12 @@ resource "aws_instance" "worker1" {
     Name = "tf worker 1"
   }
 }
-resource "aws_instance" "worker2" {
-  ami                    = var.ami
-  instance_type          = var.instance_type
-  key_name               = var.key_name
-  vpc_security_group_ids = ["${aws_security_group.sgswarm.id}", "${aws_security_group.ssh.id}"]
-  tags = {
-    Name = "tf worker 2"
-  }
-}
+# resource "aws_instance" "worker2" {
+#   ami                    = var.ami
+#   instance_type          = var.instance_type
+#   key_name               = var.key_name
+#   vpc_security_group_ids = ["${aws_security_group.sgswarm.id}", "${aws_security_group.ssh.id}"]
+#   tags = {
+#     Name = "tf worker 2"
+#   }
+# }
