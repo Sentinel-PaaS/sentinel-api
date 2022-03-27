@@ -5,19 +5,15 @@
   tasks:
     - name: Populate dynamic config template and transfer
       template:
-        src: ../assets/dynamic_template.yml
+        src: ../assets/template_dynamic_config.yml
         dest: /conf.d/{{ appName }}_dynamic.yml
 - name: Transfer a template to the manager
   hosts: managers
   become: true
-  # vars:
-  #   imageName: "{{ imageNameToTemplate }}"
-  #   hostName: "{{ hostNameToTemplate }}"
-  #   appName: "{{ appNameToTemplate }}"
   tasks:
     - name: Populate dual compose template and transfer
       template:
-        src: ../assets/template_no_db_canary.yml
+        src: ../assets/template_canary_no_db.yml
         dest: /{{ appName }}_canary.yml
 - name: Deploy application 
   hosts: managers
