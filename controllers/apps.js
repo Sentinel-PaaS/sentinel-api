@@ -92,7 +92,7 @@ module.exports = {
     // let appName = req.params.appName
 
     let productionImageNameValue = "mfatigati/docker-simple-amd";
-    let hostNameValue = "hello-canary.michaelfatigati.com";
+    let hostNameValue = "hello-canary-1.michaelfatigati.com";
     let appNameValue = "hello-simple";
     let productionPortValue = 3000;
     let canaryImageNameValue = "mfatigati/docker-canary-amd";
@@ -126,7 +126,7 @@ module.exports = {
     // let databaseImage = req.body.databaseImage;
 
     let productionImageNameValue = "mfatigati/docker-simple-amd";
-    let hostNameValue = "canary.michaelfatigati.com";
+    let hostNameValue = "hello-canary-1.michaelfatigati.com";
     let appNameValue = "hello-simple";
     let productionPortValue = 3000;
 
