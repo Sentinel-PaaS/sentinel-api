@@ -3,7 +3,7 @@
 version: "3.7"
 
 services:
-  production:
+  cat-production:
     image: dsessler7/catnip:production
     networks:
       - traefik-public
@@ -20,7 +20,7 @@ services:
         max_attempts: 5
       labels:
         - traefik.enable=true
-        - traefik.http.routers.app_router.rule=Host(`cat-canary-1.michaelfatigati.com`)
+        - traefik.http.routers.app_router.rule=Host(`cat-canary-2.michaelfatigati.com`)
         - traefik.http.routers.app_router.entrypoints=websecure
         - traefik.http.routers.app_router.tls=true
         - traefik.http.routers.app_router.tls.certresolver=myresolver
@@ -28,7 +28,7 @@ services:
         # Canary approach
         - traefik.http.routers.app_router.service=canary@file
         - traefik.http.services.production_svc.loadbalancer.server.port=5000
-  canary:
+  cat-canary:
     image: dsessler7/catnip:canary2
     networks:
       - traefik-public

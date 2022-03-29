@@ -27,12 +27,12 @@ services:
       labels:
         - traefik.enable=true
 
-        - traefik.http.routers.traefik.rule=Host(`traefik-1.michaelfatigati.com`)
+        - traefik.http.routers.traefik.rule=Host(`traefik-2.michaelfatigati.com`)
         - traefik.http.routers.traefik.entrypoints=web
-        # - traefik.http.routers.traefik.entrypoints=websecure
+        - traefik.http.routers.traefik.entrypoints=websecure
         - traefik.http.routers.traefik.service=api@internal
-        # - traefik.http.routers.traefik.tls=true
-        # - traefik.http.routers.traefik.tls.certresolver=myresolver
+        - traefik.http.routers.traefik.tls=true
+        - traefik.http.routers.traefik.tls.certresolver=myresolver
         - traefik.http.services.traefik.loadbalancer.server.port=8080
 
         # - traefik.http.routers.t.middlewares=authtraefik
@@ -68,10 +68,10 @@ services:
       # - "traefik.http.middlewares.prometheus-stripprefix.stripprefix.prefixes=/prometheus"
       - traefik.http.routers.prometheus.rule=Host(`prometheus-2.michaelfatigati.com`)
       - traefik.http.routers.prometheus.service=prometheus
-      - traefik.http.routers.prometheus.entrypoints=web
-      # - traefik.http.routers.prometheus.entrypoints=websecure
-      # - traefik.http.routers.prometheus.tls=true
-      # - traefik.http.routers.prometheus.tls.certresolver=myresolver
+      # - traefik.http.routers.prometheus.entrypoints=web
+      - traefik.http.routers.prometheus.entrypoints=websecure
+      - traefik.http.routers.prometheus.tls=true
+      - traefik.http.routers.prometheus.tls.certresolver=myresolver
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
       - traefik.docker.network=traefik-public
       placement:
@@ -80,7 +80,7 @@ services:
       restart_policy:
         condition: on-failure
   
-  node-exporter-manager-1:
+  node-exporter:
     image: prom/node-exporter
     volumes:
       - /proc:/host/proc:ro
@@ -119,12 +119,12 @@ services:
     user: "104"
     deploy:
       labels:
-        - "traefik.http.routers.grafana.rule=Host(`grafana-1.michaelfatigati.com`)"
+        - "traefik.http.routers.grafana.rule=Host(`grafana-2.michaelfatigati.com`)"
         - "traefik.http.routers.grafana.service=grafana"
-        - "traefik.http.routers.grafana.entrypoints=web"
-        # - "traefik.http.routers.grafana.entrypoints=websecure"
-        # - traefik.http.routers.grafana.tls=true
-        # - traefik.http.routers.grafana.tls.certresolver=myresolver
+        # - "traefik.http.routers.grafana.entrypoints=web"
+        - "traefik.http.routers.grafana.entrypoints=websecure"
+        - traefik.http.routers.grafana.tls=true
+        - traefik.http.routers.grafana.tls.certresolver=myresolver
         - "traefik.http.services.grafana.loadbalancer.server.port=3000"
         - "traefik.docker.network=traefik-public"
       placement:
