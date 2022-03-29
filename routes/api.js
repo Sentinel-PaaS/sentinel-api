@@ -1,4 +1,6 @@
 const express = require("express");
+const multer = require("multer");
+const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
 const appsController = require('../controllers/apps');
 
@@ -15,7 +17,7 @@ router.get('/cluster', appsController.listNodes);
 router.get('/apps/:id/logs', appsController.getServiceLogs);
 
 // Deploy a new app
-router.post('/apps', appsController.deploy);
+router.post('/apps', upload.single('sqlFile'), appsController.deploy);
 
 // Deploy a canary (currently works with just `/api/apps/randomApp/canary`)
 router.post('/apps/:appName/canary', appsController.canaryDeploy);
