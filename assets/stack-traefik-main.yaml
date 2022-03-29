@@ -26,13 +26,12 @@ services:
           - node.role == manager
       labels:
         - traefik.enable=true
-
-        - traefik.http.routers.traefik.rule=Host(`traefik.michaelfatigati.com`)
-        # - traefik.http.routers.traefik.entrypoints=web
-        - traefik.http.routers.traefik.entrypoints=websecure
+        - traefik.http.routers.traefik.rule=Host(`traefik-1.michaelfatigati.com`)
         - traefik.http.routers.traefik.service=api@internal
-        - traefik.http.routers.traefik.tls=true
-        - traefik.http.routers.traefik.tls.certresolver=myresolver
+        - traefik.http.routers.traefik.entrypoints=web
+        # - traefik.http.routers.traefik.entrypoints=websecure
+        # - traefik.http.routers.traefik.tls=true
+        # - traefik.http.routers.traefik.tls.certresolver=myresolver
         - traefik.http.services.traefik.loadbalancer.server.port=8080
 
         # - traefik.http.routers.t.middlewares=authtraefik
@@ -66,7 +65,7 @@ services:
       # - "traefik.http.routers.prometheus.service=prometheus"
       # - "traefik.http.routers.prometheus.middlewares=prometheus-stripprefix"
       # - "traefik.http.middlewares.prometheus-stripprefix.stripprefix.prefixes=/prometheus"
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.michaelfatigati.com`)"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus-2.michaelfatigati.com`)"
       - "traefik.http.routers.prometheus.service=prometheus"
       - "traefik.http.routers.prometheus.entrypoints=web"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
@@ -94,11 +93,13 @@ services:
       - traefik-public
     deploy:
       mode: global
-      placement:
-        constraints:
-          - node.role == manager
+      # placement:
+      #   constraints:
+      #     - node.role == manager
       restart_policy:
         condition: on-failure
+      labels:
+        - "traefik.http.services.node-exporter.loadbalancer.server.port=9100"
 
   grafana:
     image: grafana/grafana:7.3.1
@@ -114,7 +115,7 @@ services:
     user: "104"
     deploy:
       labels:
-        - "traefik.http.routers.grafana.rule=Host(`grafana.michaelfatigati.com`)"
+        - "traefik.http.routers.grafana.rule=Host(`grafana-1.michaelfatigati.com`)"
         - "traefik.http.routers.grafana.service=grafana"
         - "traefik.http.routers.grafana.entrypoints=web"
         - "traefik.http.services.grafana.loadbalancer.server.port=3000"

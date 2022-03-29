@@ -35,8 +35,8 @@ function getServices() {
 }
 
 module.exports = {
-  list(req, res, next) {
-    if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+  listServices(req, res, next) {
+    if (fs.existsSync('../ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
     const manager1 = createDockerAPIConnection();
@@ -56,8 +56,8 @@ module.exports = {
     });
   },
 
-  async inspect(req, res, next) {
-    if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+  async inspectService(req, res, next) {
+    if (fs.existsSync('../ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
     const manager1 = createDockerAPIConnection();
@@ -95,6 +95,28 @@ module.exports = {
     });
     console.log(services);
     res.json(services);
+  },
+
+  async listNodes(req, res, next) {
+    if (fs.existsSync('../ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+      res.status(404).send("Manager node does not exist.");
+    }
+
+    const manager1 = createDockerAPIConnection();
+
+    try {
+      // let nodes = await manager1.listNodes();
+      let nodes = await manager1.listNodes();
+      nodes = nodes.map(node => {
+        return {
+          Role: node.Spec.Role,
+          Availability: node.Spec.Availability
+        }
+      })
+      res.json(nodes);
+    } catch(err) {
+      console.log(err);
+    }
   },
 
   async canaryDeploy(req, res, next) {

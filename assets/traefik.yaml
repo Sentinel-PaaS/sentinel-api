@@ -22,11 +22,11 @@ providers:
 entryPoints:
   web:
     address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: "websecure"
-          scheme: "https"
+    # http:
+    #   redirections:
+    #     entryPoint:
+    #       to: "websecure"
+    #       scheme: "https"
     # forwardedHeaders:
     #   insecure: true
 
@@ -58,6 +58,7 @@ certificatesResolvers:
     acme:
       email: fatigati.michael@gmail.com
       storage: /assets/letsencrypt/acme.json
+      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
       tlsChallenge: {}
 
 api:

@@ -20,7 +20,7 @@ services:
         max_attempts: 5
       labels:
         - traefik.enable=true
-        - traefik.http.routers.app_router.rule=Host(`cat-canary.michaelfatigati.com`)
+        - traefik.http.routers.app_router.rule=Host(`cat-canary-1.michaelfatigati.com`)
         - traefik.http.routers.app_router.entrypoints=websecure
         - traefik.http.routers.app_router.tls=true
         - traefik.http.routers.app_router.tls.certresolver=myresolver

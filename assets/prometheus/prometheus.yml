@@ -56,3 +56,9 @@ scrape_configs:
     static_configs:
       - targets:
         - node-exporter-manager-1:9100
+
+  - job_name: 'node-exporter-worker-1'
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+        - node-exporter-worker-1:9100
