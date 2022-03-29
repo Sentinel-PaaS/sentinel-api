@@ -1,0 +1,32 @@
+---
+- name: Install Docker and Docker Compose
+  hosts: "{{ newWorkerIP }}"
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Update yum package manager
+      command: yum update -y
+    - name: Install Docker
+      command: yum install docker -y
+    - name: Enable docker
+      command: systemctl enable docker
+    - name: Start docker
+      command: systemctl start docker
+    # this is a convienience for when we have to ssh into the nodes.
+    - name: Add sudo permissions for default ec2-user with docker
+      command: sudo usermod -aG docker ec2-user
+- name: Join Swarm Cluster
+  hosts: "{{ newWorkerIP }}"
+  become: true
+  gather_facts: False
+  vars:
+    token: "{{ swarmToken }}"
+    manager: "{{ hostvars[groups['managers'][0]].manager_private_ip }}"
+  tasks:
+    - name: Join Swarm Cluster as a Worker
+      command: docker swarm join --token {{ token }} {{ manager }}:2377
+      register: worker
+    - name: Show Results
+      debug: var=worker.stdout
+    - name: Show Errors
+      debug: var=worker.stderr

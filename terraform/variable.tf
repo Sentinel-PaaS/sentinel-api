@@ -19,6 +19,9 @@ variable "key_name" {
   description = "Desired name of Keypair..."
   default     = "ssh-kp"
 }
+data "http" "myip" {
+  url = "http://ipv4.icanhazip.com"
+}
 # variable "bootstrap_path" {
 #   description = "Script to install Docker Engine"
 #   default     = "./install_docker_engine_compose.sh"

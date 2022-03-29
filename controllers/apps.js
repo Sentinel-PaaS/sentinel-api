@@ -24,16 +24,6 @@ function createDockerAPIConnection() {
   });
 }
 
-function getServices() {
-  const manager1 = createDockerAPIConnection();
-
-  return new Promise((resolve, reject) => {
-    manager1.listServices().then(success => {
-      return success;
-    }).catch(err => reject(err));
-  });
-}
-
 module.exports = {
   list(req, res, next) {
     if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
@@ -154,10 +144,6 @@ module.exports = {
     });
   },
 
-  // databaseUserName
-  // databasePassword
-  // sqlFile
-
   async deploy(req, res, next) {
     const appName = req.body.appName;
     const productionImagePath = req.body.productionImagePath;
@@ -215,7 +201,7 @@ module.exports = {
       canaryWeight,
       productionWeight,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     await playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
@@ -236,14 +222,14 @@ module.exports = {
     // let canaryImage = services.
   },
 
-  async canaryRollback(req, res, next) {
+  canaryRollback(req, res, next) {
     let appName = req.params.appName;
     // TODO: Add check for app's existence, respond with 400 if it doesn't exist
 
     let playbook = new Ansible.Playbook().playbook('ansible/rollback_canary').variables({
       appName,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
@@ -255,14 +241,14 @@ module.exports = {
     });
   },
 
-  async deleteApp(req, res, next) {
+  deleteApp(req, res, next) {
     let appName = req.params.appName;
     // TODO: Add check for app's existence, respond with 400 if it doesn't exist
 
     let playbook = new Ansible.Playbook().playbook('ansible/delete_app').variables({
       appName,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
