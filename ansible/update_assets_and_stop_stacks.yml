@@ -7,6 +7,8 @@
       copy:
         src: ../assets/
         dest: /
+    - name: Restrict access to TLS cert document (transferred over in prior command)
+      command: chmod 600 /letsencrypt/acme.json
 - name: Stop current traefik and catnip stacks
   hosts: managers
   become: true

@@ -7,10 +7,16 @@ const clusterController = require('../controllers/cluster');
 
 // Routes for apps controller
 // Get list of all running apps
-router.get('/apps', appsController.list);
+router.get('/apps', appsController.listServices);
 
 // Inspect the status of a particular service
-router.get('/apps/:appName', appsController.inspect);
+router.get('/apps/:appName', appsController.inspectService);
+
+// Inspect the status of a particular service
+router.get('/cluster', appsController.listNodes);
+
+// Inspect the status of a particular service
+router.get('/apps/:id/logs', appsController.getServiceLogs);
 
 // Deploy a new app
 router.post('/apps', upload.single('sqlFile'), appsController.deploy);

@@ -5,6 +5,7 @@ const Docker = require('dockerode');
 const fs = require('fs');
 const ini = require('ini');
 // const path = require("path");
+const AXIOS = require('axios');
 
 function getManagerIP() {
   const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
@@ -25,66 +26,119 @@ function createDockerAPIConnection() {
 }
 
 module.exports = {
-  list(req, res, next) {
+  // https://docs.docker.com/engine/api/v1.37/#operation/ServiceLogs
+  getServiceLogs(req, res, next) {
     if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
-    const manager1 = createDockerAPIConnection();
+    const managerIP = getManagerIP();
 
-    manager1.listServices().then((successResult) => {
-      console.log(successResult);
-      successResult = successResult.map(record => {
-        return {
-          serviceName: record.Spec.Name,
-          serviceID: record.ID,
-        };
-      });
-      res.status(200).json(successResult);
-    }).catch((error) => {
-      console.error(error);
-      res.status(500).json({ error });
-    });
+    let serviceID = req.params.id;
+    let result = AXIOS.get(`http://${managerIP}:2375/services/${serviceID}/logs?stdout=true&stderr=true`);
+    result.then(success => {
+      res.send(success.data);
+    }).catch(err => {
+      console.log(err)
+    })
   },
 
-  async inspect(req, res, next) {
+  listServices(req, res, next) {
     if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
-    const manager1 = createDockerAPIConnection();
+    const managerIP = getManagerIP();
 
-    // use listServices to get container ids, as well as whether there is a canary
-    // use listContainers to get health of the containers
+    let result = AXIOS.get(`http://${managerIP}:2375/services`);
+    result.then(success => {
+      result = success.data;
+      result = result.map(record => {
+            return {
+              serviceName: record.Spec.Name,
+              serviceID: record.ID,
+            };
+          });
+      res.send(result);
+    }).catch(err => {
+      console.log(err)
+    })
+  },
+
+  async inspectService(req, res, next) {
+    if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+      res.status(404).send("Manager node does not exist.");
+    }
+    const managerIP = getManagerIP();
 
     let serviceName = req.params.appName;
     let regex = /.*(?=_)/;
-
-    // get the part of the name prior to "_production", to match this against any canaries
     let serviceNameFirstPart = serviceName.match(regex)[0];
-    let services = await manager1.listServices();
 
-    services = services.filter(record => {
-      let firstPart = record.Spec.Name.match(regex)[0];
-      return firstPart === serviceNameFirstPart;
-    });
-    services = services.map(record => {
-      return {
-        serviceName: record.Spec.Name,
-        serviceID: record.ID,
-        serviceReplicas: record.Spec.Mode.Replicated.Replicas
-      };
-    });
-
-    let containers = await manager1.listContainers();
-
-    services.forEach(service => {
-      containers.forEach(record => {
-        if (record.Labels['com.docker.swarm.service.id'] === service.serviceID) {
-          service.serviceState = `${record.State}: ${record.Status}`;
-        }
+    try {
+      let services = await AXIOS.get(`http://${managerIP}:2375/services`)
+      services = services.data;
+      services = services.filter(record => {
+        let firstPart = record.Spec.Name.match(regex)[0];
+        return firstPart === serviceNameFirstPart;
       });
-    });
-    console.log(services);
-    res.json(services);
+      services = services.map(record => {
+        return {
+          serviceName: record.Spec.Name,
+          serviceID: record.ID,
+          serviceReplicas: record.Spec.Mode.Replicated.Replicas,
+          servicesTasks: []
+        };
+      });
+
+      let tasks = await AXIOS.get(`http://${managerIP}:2375/tasks`);
+      tasks = tasks.data;
+
+      services.forEach(service => {
+        tasks.forEach(task => {
+          if (task.ServiceID === service.serviceID) {
+            service.servicesTasks.push({
+              taskStatus: task.Status.State,
+              taskStatusTimestamp: task.Status.Timestamp,
+              taskSlot: task.Slot,
+              taskContainer: task.Status.ContainerStatus.ContainerID
+            })
+          }
+        })
+      });
+      
+      let result = services;
+      res.send(result);
+    } catch(err) {
+      console.log(err)
+    }
+
+  },
+
+  async listNodes(req, res, next) {
+    if (fs.existsSync('../ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+      res.status(404).send("Manager node does not exist.");
+    }
+
+    const manager1 = createDockerAPIConnection();
+
+    try {
+      // let nodes = await manager1.listNodes();
+      let nodes = await manager1.listNodes();
+      nodes = nodes.map(node => {
+        return {
+          Role: node.Spec.Role,
+          Availability: node.Spec.Availability,
+          // InternalAddr: node.Status.Addr
+        }
+      })
+      let data = await AXIOS.get(`https://prometheus-2.michaelfatigati.com/api/v1/`, {
+        query: "node_filesystem_size_bytes"
+      });
+      console.log(data.data);
+
+      res.json(nodes);
+    } catch(err) {
+      console.log(err);
+    }
   },
 
   async canaryDeploy(req, res, next) {
