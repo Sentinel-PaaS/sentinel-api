@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ./terraform/
+cd ../terraform/
 
 terraform apply -auto-approve
 
@@ -12,4 +12,7 @@ sleep 3.5
 #  More info here: https://github.com/ansible/ansible/issues/25068
 ansible-playbook -i inventory/hosts swarm_init.yml --fork 1
 
-../deploy_app.sh
+cd ../shell_files
+
+# needs to be on a new line
+deploy_app.sh

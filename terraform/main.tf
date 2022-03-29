@@ -19,6 +19,7 @@ resource "aws_key_pair" "manager_kp" {
     tls_private_key.manager_pk
   ]
 }
+
 resource "aws_instance" "manager1" {
   ami                    = var.ami
   instance_type          = var.instance_type

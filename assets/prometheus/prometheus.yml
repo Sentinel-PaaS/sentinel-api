@@ -50,3 +50,9 @@ scrape_configs:
     static_configs:
       - targets:
         - traefik:8080
+
+  - job_name: 'node-exporter-manager-1'
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+        - node-exporter-manager-1:9100

@@ -3,7 +3,7 @@ version: "3.7"
 
 services:
   production:
-    image: {{ productionImageName }}
+    image: {{ productionImagePath }}
     networks:
       - traefik-public
     deploy:
@@ -19,15 +19,17 @@ services:
         max_attempts: 5
       labels:
         - traefik.enable=true
-        - traefik.http.routers.{{ appName }}_rtr.rule=Host(`{{ hostName }}`)
-        - traefik.http.routers.{{ appName }}_rtr.entrypoints=web
-        # - traefik.http.routers.app_router.tls.certresolver=le
+        - traefik.http.routers.{{ appName }}_rtr.rule=Host(`{{ hostname }}`)
+        # - traefik.http.routers.{{ appName }}_rtr.entrypoints=web
+        - traefik.http.routers.{{ appName }}_rtr.entrypoints=websecure
+        - traefik.http.routers.{{ appName }}_rtr.tls=true
+        - traefik.http.routers.{{ appName }}_rtr.tls.certresolver=myresolver
         # the port listed here MUST be the internal post listed in the image
         - traefik.http.services.{{ appName }}_production_svc.loadbalancer.server.port={{ productionPort }}
         # Canary approach
         - traefik.http.routers.{{ appName }}_rtr.service={{ appName }}_weighted_svc@file
   canary:
-    image: {{ canaryImageName }}
+    image: {{ canaryImagePath }}
     networks:
       - traefik-public
     deploy:

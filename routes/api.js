@@ -1,4 +1,6 @@
 const express = require("express");
+const multer = require("multer");
+const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
 const appsController = require('../controllers/apps');
 const clusterController = require('../controllers/cluster');
@@ -7,10 +9,13 @@ const clusterController = require('../controllers/cluster');
 // Get list of all running apps
 router.get('/apps', appsController.list);
 
-// Deploy a new app
-router.post('/apps', appsController.deploy);
+// Inspect the status of a particular service
+router.get('/apps/:appName', appsController.inspect);
 
-// Deploy a canary
+// Deploy a new app
+router.post('/apps', upload.single('sqlFile'), appsController.deploy);
+
+// Deploy a canary (currently works with just `/api/apps/randomApp/canary`)
 router.post('/apps/:appName/canary', appsController.canaryDeploy);
 
 // Change canary traffic splitting weights
