@@ -170,3 +170,24 @@ resource "aws_security_group" "tf_express" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+# Docker API Port for Dockerode
+resource "aws_security_group" "tf_docker_api" {
+  name = "tf_docker_api"
+  tags = {
+    Name = "tf_docker_api"
+  }
+
+  ingress {
+    from_port   = 2375
+    to_port     = 2375
+    protocol    = "tcp"
+    cidr_blocks = ["${chomp(data.http.myip.body)}/32"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}

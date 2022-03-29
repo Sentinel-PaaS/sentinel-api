@@ -26,6 +26,7 @@
     "express": "^4.17.3",
     "fs": "^0.0.1-security",
     "ini": "^2.0.0",
+    "multer": "^1.4.4",
     "node-ansible": "^0.5.5",
     "nodemon": "^2.0.15"
   }

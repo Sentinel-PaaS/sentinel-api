@@ -21,7 +21,7 @@ const ini = require('ini');
 // let managerNodes = [];
 
 const manager1 = new Docker({
-  host: '3.145.27.235',
+  host: '3.15.39.80',
   port: process.env.DOCKER_PORT || 2375,
   // ca: fs.readFileSync('ca.pem'),
   // cert: fs.readFileSync('cert.pem'),

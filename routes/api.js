@@ -29,6 +29,10 @@ router.delete('/apps/:appName', appsController.deleteApp);
 // Initialize cluster
 router.post('/cluster/initialize', clusterController.init);
 
+// Scale cluster
+router.put('/cluster/scale', clusterController.scale);
+
+// Delete cluster
 router.delete('/destroy', clusterController.destroy);
 
   // let playbook = new Ansible.Playbook().playbook('ansible/get_apps');
