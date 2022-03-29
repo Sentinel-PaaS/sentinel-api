@@ -1,0 +1,28 @@
+---
+version: "3.7"
+
+services:
+  {{dbHost}}:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER={{dbUsername}}
+      - POSTGRES_PASSWORD={{dbPassword}}
+      - POSTGRES_DB={{dbName}}
+      - DB_PORT=5432
+      - POSTGRES_HOST={{dbHost}}
+    ports:
+      - '5432:5432'
+    volumes:
+      - /var/lib/postgresql/data
+      - ./sql/{{appName}}_db.sql:/docker-entrypoint-initdb.d/{{appName}}_db.sql
+    labels:
+      - traefik.enable=false
+    networks:
+      - {{appName}}-network
+networks:
+  {{appName}}-network:
+    driver: overlay
+    attachable: true
+    name: {{appName}}-network
+    external: false

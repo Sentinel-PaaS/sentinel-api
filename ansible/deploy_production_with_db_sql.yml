@@ -3,17 +3,25 @@
     hosts: managers
     become: true
     tasks:
-      - name: Populate db template and transfer to manager
+      - name: Populate template and transfer to manager
         template:
-          src: ../assets/template_db_nosql.yml
+          src: ../assets/template_db_sql.yml
           dest: /{{ appName }}_db.yml
+  - name: Copy sql file to manager
+    hosts: managers
+    become: true
+    tasks:
+      - name: Copy sql init file to manager
+        copy:
+          src: ../assets/sql/{{appName}}_db.sql
+          dest: /sql/{{appName}}_db.sql
   - name: Deploy database 
     hosts: managers
     become: true
     tasks:
       - name: Deploy database
         command: sudo docker stack deploy -c /{{ appName }}_db.yml "{{ appName }}"
-  - name: Transfer a template to the manager
+  - name: Transfer app template to the manager
     hosts: managers
     become: true
     tasks:
