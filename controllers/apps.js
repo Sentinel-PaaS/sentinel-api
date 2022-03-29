@@ -1,92 +1,127 @@
+/* eslint-disable max-statements */
 /* eslint-disable max-lines-per-function */
 const Ansible = require("node-ansible");
 const Docker = require('dockerode');
 const fs = require('fs');
 const ini = require('ini');
 // const path = require("path");
+const AXIOS = require('axios');
 
-const hosts = ini.parse(fs.readFileSync('./inventory/hosts', 'utf-8'));
-console.log(hosts);
+function getManagerIP() {
+  const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
+  return Object.keys(hosts.managers)[0].split(' ')[0];
+}
 
-// function createNewDocker(hostAddress) {
-//   return new Docker({
-//     host: hostAddress,
-//     port: process.env.DOCKER_PORT || 2375,
-//     // ca: fs.readFileSync('ca.pem'),
-//     // cert: fs.readFileSync('cert.pem'),
-//     // key: fs.readFileSync('~/ssh-keys/ec2-docker.pem'),
-//     version: 'v1.25' // required when Docker >= v1.13, https://docs.docker.com/engine/api/version-history/
-//   });
-// }
-// let managerNodes = [];
+const managerIP = getManagerIP();
 
-const manager1 = new Docker({
-  host: '3.140.246.188',
-  port: process.env.DOCKER_PORT || 2375,
-  // ca: fs.readFileSync('ca.pem'),
-  // cert: fs.readFileSync('cert.pem'),
-  // key: fs.readFileSync('~/ssh-keys/ec2-docker.pem'),
-  version: 'v1.25' // required when Docker >= v1.13, https://docs.docker.com/engine/api/version-history/
-});
+function createDockerAPIConnection() {
+  const managerIP = getManagerIP();
 
-function getServices() {
-  return new Promise((resolve, reject) => {
-    manager1.listServices().then(success => {
-      return success;
-    }).catch(err => reject(err));
-  })
+  return new Docker({
+    host: managerIP,
+    port: process.env.DOCKER_PORT || 2375,
+    // ca: fs.readFileSync('ca.pem'),
+    // cert: fs.readFileSync('cert.pem'),
+    // key: fs.readFileSync('~/ssh-keys/ec2-docker.pem'),
+    version: 'v1.25' // required when Docker >= v1.13, https://docs.docker.com/engine/api/version-history/
+  });
 }
 
 module.exports = {
-  list(req, res, next) {
-    manager1.listServices().then((successResult) => {
-      console.log(successResult);
-      successResult = successResult.map(record => {
+  // https://docs.docker.com/engine/api/v1.37/#operation/ServiceLogs
+  getServiceLogs(req, res, next) {
+    let serviceID = req.params.id;
+    let result = AXIOS.get(`http://${managerIP}:2375/services/${serviceID}/logs?stdout=true&stderr=true`);
+    result.then(success => {
+      res.send(success.data);
+    }).catch(err => {
+      console.log(err)
+    })
+  },
+
+  listServices(req, res, next) {
+
+    let result = AXIOS.get(`http://${managerIP}:2375/services`);
+    result.then(success => {
+      result = success.data;
+      result = result.map(record => {
+            return {
+              serviceName: record.Spec.Name,
+              serviceID: record.ID,
+            };
+          });
+      res.send(result);
+    }).catch(err => {
+      console.log(err)
+    })
+  },
+
+  async inspectService(req, res, next) {
+    let serviceName = req.params.appName;
+    let regex = /.*(?=_)/;
+    let serviceNameFirstPart = serviceName.match(regex)[0];
+
+    try {
+      let services = await AXIOS.get(`http://${managerIP}:2375/services`)
+      services = services.data;
+      services = services.filter(record => {
+        let firstPart = record.Spec.Name.match(regex)[0];
+        return firstPart === serviceNameFirstPart;
+      });
+      services = services.map(record => {
         return {
           serviceName: record.Spec.Name,
           serviceID: record.ID,
-        }
+          serviceReplicas: record.Spec.Mode.Replicated.Replicas,
+          servicesTasks: []
+        };
       });
-      res.status(200).json(successResult);
-    }).catch((error) => {
-      console.error(error);
-      res.status(500).json({ error });
-    })},
 
-  async inspect(req, res, next) {
-    // use listServices to get container ids, as well as whether there is a canary
-    // use listContainers to get health of the containers
+      let tasks = await AXIOS.get(`http://${managerIP}:2375/tasks`);
+      tasks = tasks.data;
 
-    let serviceName = req.params.appName;
-    let regex = /.*(?=_)/
-    // get the part of the name prior to "_production", to match this against any canaries
-    serviceNameFirstPart = serviceName.match(regex)[0]
-    let services = await manager1.listServices()
-    
-    services = services.filter(record => {
-      let firstPart = record.Spec.Name.match(regex)[0]
-      return firstPart === serviceNameFirstPart;
-    });
-    services = services.map(record => {
-      return {
-        serviceName: record.Spec.Name,
-        serviceID: record.ID,
-        serviceReplicas: record.Spec.Mode.Replicated.Replicas
-      }
-    })
+      services.forEach(service => {
+        tasks.forEach(task => {
+          if (task.ServiceID === service.serviceID) {
+            service.servicesTasks.push({
+              taskStatus: task.Status.State,
+              taskStatusTimestamp: task.Status.Timestamp,
+              taskSlot: task.Slot
+            })
+          }
+        })
+      });
+      
+      let result = services;
+      res.send(result);
+    } catch(err) {
+      console.log(err)
+    }
 
-    let containers = await manager1.listContainers();
+  },
 
-    services.forEach(service => {
-      containers.forEach(record => {
-        if (record.Labels['com.docker.swarm.service.id'] === service.serviceID) {
-          service.serviceState = `${record.State}: ${record.Status}`
+  async listNodes(req, res, next) {
+    if (fs.existsSync('../ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+      res.status(404).send("Manager node does not exist.");
+    }
+
+    const manager1 = createDockerAPIConnection();
+
+    try {
+      // let nodes = await manager1.listNodes();
+      let nodes = await manager1.listNodes();
+      nodes = nodes.map(node => {
+        return {
+          Role: node.Spec.Role,
+          Availability: node.Spec.Availability,
+          // InternalAddr: node.Status.Addr
         }
       })
-    })
-    console.log(services);
-    res.json(services)
-    },
+      res.json(nodes);
+    } catch(err) {
+      console.log(err);
+    }
+  },
 
   async canaryDeploy(req, res, next) {
     // let appName = req.params.appName
