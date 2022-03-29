@@ -1,5 +1,22 @@
 ### swarm_init.yml
 ---
+- name: Copy docker configfile
+  hosts: managers
+  become: true
+  gather_facts: False
+  tasks:
+    - name: make folder for config
+      command: sudo mkdir -p /etc/docker
+    - name: make folder for override
+      command: sudo mkdir -p /etc/systemd/system/docker.service.d/
+    - name: copy daemon config file
+      copy:
+        src: ./daemon.json
+        dest: /etc/docker/daemon.json
+    - name: copy config override file
+      copy:
+        src: ./override.conf
+        dest: /etc/systemd/system/docker.service.d/override.conf
 - name: Install Docker and Docker Compose
   hosts: all
   become: true
@@ -27,6 +44,8 @@
       copy:
         src: ../assets/
         dest: /
+    - name: Restrict access to TLS cert document (transferred over in prior command)
+      command: chmod 600 /letsencrypt/acme.json
       # If we are dynamically scaling we should store these values somewhere. Maybe in out DB? Registered variables only persist for the life time of this play.
     - name: Get Worker Token
       command: docker swarm join-token worker -q
