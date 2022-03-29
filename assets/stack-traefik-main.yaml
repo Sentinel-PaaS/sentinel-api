@@ -97,9 +97,9 @@ services:
       - traefik-public
     deploy:
       mode: global
-      placement:
-        constraints:
-          - node.role == manager
+      # placement:
+      #   constraints:
+      #     - node.role == manager
       restart_policy:
         condition: on-failure
       labels:

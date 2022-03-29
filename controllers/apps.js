@@ -86,7 +86,8 @@ module.exports = {
             service.servicesTasks.push({
               taskStatus: task.Status.State,
               taskStatusTimestamp: task.Status.Timestamp,
-              taskSlot: task.Slot
+              taskSlot: task.Slot,
+              taskContainer: task.Status.ContainerStatus.ContainerID
             })
           }
         })
@@ -117,6 +118,11 @@ module.exports = {
           // InternalAddr: node.Status.Addr
         }
       })
+      let data = await AXIOS.get(`https://prometheus-2.michaelfatigati.com/api/v1/`, {
+        query: "node_filesystem_size_bytes"
+      });
+      console.log(data.data);
+
       res.json(nodes);
     } catch(err) {
       console.log(err);
