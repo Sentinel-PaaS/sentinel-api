@@ -1,1 +1,0 @@
-"catnip_canary: replicated 1/1\ncatnip_production: replicated 3/3\ntraefik_traefik: replicated 1/1"

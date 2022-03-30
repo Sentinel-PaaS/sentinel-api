@@ -7,7 +7,7 @@
       template:
         src: ../assets/template_dynamic_config.yml
         dest: /conf.d/{{ appName }}_dynamic.yml
-- name: Transfer a template to the manager
+- name: Transfer templates to the manager
   hosts: managers
   become: true
   tasks:
@@ -15,6 +15,10 @@
       template:
         src: ../assets/template_canary_with_db.yml
         dest: /{{ appName }}_canary.yml
+    - name: Transfer new production template in case of rollback
+      template:
+        src: ../assets/template_production_with_db.yml
+        dest: /{{ appName }}_production.yml
 - name: Deploy application 
   hosts: managers
   become: true

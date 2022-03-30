@@ -11,3 +11,11 @@
   tasks:
     - name: Remove canary service
       command: sudo docker service rm {{ appName }}_canary
+- name: Remove dynamic config file
+  hosts: managers
+  become: true
+  tasks:
+    - name: Remove the file
+      file:
+        path: /conf.d/{{ appName }}_dynamic.yml
+        state: absent

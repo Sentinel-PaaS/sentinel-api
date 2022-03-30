@@ -127,7 +127,7 @@ resource "aws_key_pair" "worker_kp_${workerNumber}" {
   public_key = tls_private_key.worker_pk_${workerNumber}.public_key_openssh
 
   provisioner "local-exec" { # Export "workerKey${workerNumber}.pem" to the API server.
-    command = "echo '\${tls_private_key.worker_pk_${workerNumber}.private_key_pem}' > ~/.ssh/workerKey${workerNumber}.pem"
+    command = "echo '\${tls_private_key.worker_pk_${workerNumber}.private_key_pem}' > ../keys/workerKey${workerNumber}.pem"
   }
   depends_on = [
     tls_private_key.worker_pk_${workerNumber}
@@ -158,14 +158,14 @@ output "worker${workerNumber}_private_ip" {
   let outputContent = `resource "local_file" "hosts" {
   content  = <<-DOC
     [managers]
-    \${aws_instance.manager1.public_ip} ansible_user=ec2-user ansible_private_key_file=~/.ssh/managerKey.pem
+    \${aws_instance.manager1.public_ip} ansible_user=ec2-user ansible_private_key_file=./keys/managerKey.pem
     [managers:vars]
     manager_private_ip=\${aws_instance.manager1.private_ip}
     [workers]
 `;
 
   for (let x = 1; x <= workerNumber; x++) {
-    outputContent += `    \${aws_instance.worker${x}.public_ip} ansible_user=ec2-user ansible_private_key_file=~/.ssh/workerKey${x}.pem\n`;
+    outputContent += `    \${aws_instance.worker${x}.public_ip} ansible_user=ec2-user ansible_private_key_file=./keys/workerKey${x}.pem\n`;
   }
   outputContent += `    DOC
   filename = "../ansible/inventory/hosts"
@@ -186,14 +186,14 @@ function scaleDown(req, res, next) {
   let outputContent = `resource "local_file" "hosts" {
     content  = <<-DOC
       [managers]
-      \${aws_instance.manager1.public_ip} ansible_user=ec2-user ansible_private_key_file=~/.ssh/managerKey.pem
+      \${aws_instance.manager1.public_ip} ansible_user=ec2-user ansible_private_key_file=./keys/managerKey.pem
       [managers:vars]
       manager_private_ip=\${aws_instance.manager1.private_ip}
       [workers]
   `;
 
   for (let x = 1; x <= workerNumber; x++) {
-    outputContent += `    \${aws_instance.worker${x}.public_ip} ansible_user=ec2-user ansible_private_key_file=~/.ssh/workerKey${x}.pem\n`;
+    outputContent += `    \${aws_instance.worker${x}.public_ip} ansible_user=ec2-user ansible_private_key_file=./keys/workerKey${x}.pem\n`;
   }
   outputContent += `    DOC
   filename = "../ansible/inventory/hosts"
@@ -208,7 +208,7 @@ module.exports = {
     await initializeTerraform(req, res, next);
     await applyTerraform(req, res, next);
     try {
-      const { stdout, stderr } = await exec("chmod 400 ~/.ssh/managerKey.pem");
+      const { stdout, stderr } = await exec("chmod 400 ./keys/managerKey.pem");
       console.log('stdout: permissions changed, ', stdout);
       console.error('stderr: ', stderr);
     } catch (error) {
@@ -225,7 +225,7 @@ module.exports = {
     await applyTerraform(req, res, next);
     if (req.body.scaleCluster === 'up') {
       try {
-        const { stdout, stderr } = await exec(`chmod 400 ~/.ssh/workerKey${getWorkerCount()}.pem`);
+        const { stdout, stderr } = await exec(`chmod 400 ./keys/workerKey${getWorkerCount()}.pem`);
         console.log('stdout: permissions changed, ', stdout);
         console.error('stderr: ', stderr);
       } catch (error) {
@@ -259,7 +259,7 @@ module.exports = {
       });
     } else {
       let workerNumber = getWorkerCount() + 1;
-      fs.unlinkSync(`~/.ssh/workerKey${workerNumber}.pem`);
+      fs.unlinkSync(`./keys/workerKey${workerNumber}.pem`);
       res.status(200).send("Scale down complete.");
     }
   },
@@ -286,14 +286,14 @@ module.exports = {
 
     terraformDestroy.on("close", code => {
       console.log(`child process exited with code ${code}`);
-      // res.status(200).send("Destroy complete.");
+      res.status(200).send("Destroy complete.");
       // return 1;
     });
 
     // delete manager key (all keys)
-    fs.unlinkSync(`~/.ssh/managerKey.pem`);
+    fs.unlinkSync(`./keys/managerKey.pem`);
     for (let x = 1; x <= workerNumber; x++) {
-      fs.unlinkSync(`~/.ssh/workerKey${x}.pem`);
+      fs.unlinkSync(`./keys/workerKey${x}.pem`);
     }
   },
 
@@ -305,7 +305,6 @@ module.exports = {
     const managerIP = getManagerIP();
 
     try {
-      
       let nodeMetrics = await getClusterMetrics(managerIP);
 
       res.json(nodeMetrics);
