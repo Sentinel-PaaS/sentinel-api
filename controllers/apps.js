@@ -5,6 +5,8 @@ const Docker = require('dockerode');
 const fs = require('fs');
 const ini = require('ini');
 // const path = require("path");
+const AXIOS = require('axios');
+const { compileFunction } = require("vm");
 
 function getManagerIP() {
   const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
@@ -24,77 +26,91 @@ function createDockerAPIConnection() {
   });
 }
 
-function getServices() {
-  const manager1 = createDockerAPIConnection();
-
-  return new Promise((resolve, reject) => {
-    manager1.listServices().then(success => {
-      return success;
-    }).catch(err => reject(err));
-  });
-}
-
 module.exports = {
-  list(req, res, next) {
-    if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+  // https://docs.docker.com/engine/api/v1.37/#operation/ServiceLogs
+  getServiceLogs(req, res, next) {
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
-    const manager1 = createDockerAPIConnection();
+    const managerIP = getManagerIP();
 
-    manager1.listServices().then((successResult) => {
-      console.log(successResult);
-      successResult = successResult.map(record => {
+    let serviceID = req.params.id;
+    let result = AXIOS.get(`http://${managerIP}:2375/services/${serviceID}/logs?stdout=true&stderr=true`);
+    result.then(success => {
+      res.send(success.data);
+    }).catch(err => {
+      console.log(err);
+    });
+  },
+
+  listServices(req, res, next) {
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+      res.status(404).send("Manager node does not exist.");
+    }
+    const managerIP = getManagerIP();
+
+    let result = AXIOS.get(`http://${managerIP}:2375/services`);
+    result.then(success => {
+      result = success.data;
+      result = result.map(record => {
         return {
           serviceName: record.Spec.Name,
           serviceID: record.ID,
         };
       });
-      res.status(200).json(successResult);
-    }).catch((error) => {
-      console.error(error);
-      res.status(500).json({ error });
+      res.send(result);
+    }).catch(err => {
+      console.log(err);
     });
   },
 
-  async inspect(req, res, next) {
-    if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+  async inspectService(req, res, next) {
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
-    const manager1 = createDockerAPIConnection();
-
-    // use listServices to get container ids, as well as whether there is a canary
-    // use listContainers to get health of the containers
+    const managerIP = getManagerIP();
 
     let serviceName = req.params.appName;
     let regex = /.*(?=_)/;
-
-    // get the part of the name prior to "_production", to match this against any canaries
     let serviceNameFirstPart = serviceName.match(regex)[0];
-    let services = await manager1.listServices();
 
-    services = services.filter(record => {
-      let firstPart = record.Spec.Name.match(regex)[0];
-      return firstPart === serviceNameFirstPart;
-    });
-    services = services.map(record => {
-      return {
-        serviceName: record.Spec.Name,
-        serviceID: record.ID,
-        serviceReplicas: record.Spec.Mode.Replicated.Replicas
-      };
-    });
-
-    let containers = await manager1.listContainers();
-
-    services.forEach(service => {
-      containers.forEach(record => {
-        if (record.Labels['com.docker.swarm.service.id'] === service.serviceID) {
-          service.serviceState = `${record.State}: ${record.Status}`;
-        }
+    try {
+      let services = await AXIOS.get(`http://${managerIP}:2375/services`)
+      services = services.data;
+      services = services.filter(record => {
+        let firstPart = record.Spec.Name.match(regex)[0];
+        return firstPart === serviceNameFirstPart;
       });
-    });
-    console.log(services);
-    res.json(services);
+      services = services.map(record => {
+        return {
+          serviceName: record.Spec.Name,
+          serviceID: record.ID,
+          serviceReplicas: record.Spec.Mode.Replicated.Replicas,
+          servicesTasks: []
+        };
+      });
+
+      let tasks = await AXIOS.get(`http://${managerIP}:2375/tasks`);
+      tasks = tasks.data;
+
+      services.forEach(service => {
+        tasks.forEach(task => {
+          if (task.ServiceID === service.serviceID) {
+            service.servicesTasks.push({
+              taskStatus: task.Status.State,
+              taskStatusTimestamp: task.Status.Timestamp,
+              taskSlot: task.Slot,
+              taskContainer: task.Status.ContainerStatus.ContainerID
+            });
+          }
+        });
+      });
+
+      let result = services;
+      res.send(result);
+    } catch (err) {
+      console.log(err);
+    }
   },
 
   async canaryDeploy(req, res, next) {
@@ -145,10 +161,9 @@ module.exports = {
         productionWeight,
       });
     }
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
-    let promise = playbook.exec();
-    promise.then((successResult) => {
+    await playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
       console.log("success output: ", successResult.output); // Standard output/error of the executed command
       res.status(200).send("Canary deployed.");
@@ -157,6 +172,7 @@ module.exports = {
       res.status(500).send("Something went wrong.");
     });
   },
+
 
   async upload(req, res, next) {
     console.log(req)
@@ -170,6 +186,7 @@ module.exports = {
     }
   },
 
+  
   async deploy(req, res, next) {
     const appName = req.body.appName;
     const productionImagePath = req.body.productionImagePath;
@@ -213,7 +230,7 @@ module.exports = {
         productionPort,
       });
     }
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     let promise = playbook.exec();
     promise.then((successResult) => {
@@ -241,7 +258,7 @@ module.exports = {
       canaryWeight,
       productionWeight,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     await playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
@@ -257,19 +274,35 @@ module.exports = {
     let appName = req.params.appName;
     // TODO: Add check for app's existence, respond with 400 if it doesn't exist
 
-    let services = await manager1.listServices();
-    console.log(services);
-    // let canaryImage = services.
+    let manager = createDockerAPIConnection();
+    let canaryService = manager.getService(`${appName}_canary`);
+    let canaryServiceInspected = await canaryService.inspect();
+    let updateImage = canaryServiceInspected.Spec.Labels["com.docker.stack.image"];
+
+    let playbook = new Ansible.Playbook().playbook('ansible/promote_canary').variables({
+      appName,
+      updateImage
+    });
+    playbook.inventory('ansible/inventory/hosts');
+
+    await playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("Canary promoted.");
+    }).catch((error) => {
+      console.error(error);
+      res.status(500).send("Something went wrong.");
+    });
   },
 
-  async canaryRollback(req, res, next) {
+  canaryRollback(req, res, next) {
     let appName = req.params.appName;
     // TODO: Add check for app's existence, respond with 400 if it doesn't exist
 
     let playbook = new Ansible.Playbook().playbook('ansible/rollback_canary').variables({
       appName,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
@@ -281,14 +314,14 @@ module.exports = {
     });
   },
 
-  async deleteApp(req, res, next) {
+  deleteApp(req, res, next) {
     let appName = req.params.appName;
     // TODO: Add check for app's existence, respond with 400 if it doesn't exist
 
     let playbook = new Ansible.Playbook().playbook('ansible/delete_app').variables({
       appName,
     });
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
@@ -298,6 +331,28 @@ module.exports = {
       console.error(error);
       res.status(500).send("Something went wrong.");
     });
+  },
+
+  async scale(req, res, next) {
+    let appName = req.params.appName;
+    // TODO: Add check for app's existence, respond with 400 if it doesn't exist
+
+    let scaleNumber = req.body.scaleNumber;
+    let playbook = new Ansible.Playbook().playbook('ansible/scale_app').variables({
+      appName,
+      scaleNumber
+    });
+    playbook.inventory('ansible/inventory/hosts');
+
+    await playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send(`${appName} app scaled to ${scaleNumber} containers.`);
+    }).catch((error) => {
+      console.error(error);
+      res.status(500).send("Something went wrong.");
+    });
+
   },
 
 };

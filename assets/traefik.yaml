@@ -27,13 +27,9 @@ entryPoints:
         entryPoint:
           to: "websecure"
           scheme: "https"
-    # forwardedHeaders:
-    #   insecure: true
 
   websecure:
     address: ":443"
-    # forwardedHeaders:
-    #   insecure: true
 
 #   ping:
 #     address: :8082
@@ -59,6 +55,7 @@ certificatesResolvers:
       email: fatigati.michael@gmail.com
       storage: /assets/letsencrypt/acme.json
       tlsChallenge: {}
+      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
 
 api:
   insecure: true

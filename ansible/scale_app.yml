@@ -1,0 +1,7 @@
+---
+- name: Scale app containers
+  hosts: managers
+  become: true
+  tasks:
+    - name: Run docker service scale command
+      command: sudo docker service scale {{ appName }}_production={{ scaleNumber }}
