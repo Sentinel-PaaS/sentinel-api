@@ -7,6 +7,9 @@ const exec = util.promisify(require("child_process").exec);
 const { spawn } = require("child_process");
 const fs = require("fs");
 const ini = require("ini");
+const AXIOS = require('axios');
+const HTTPS = require('https');
+const {getClusterMetrics} = require('./cluster_metrics');
 
 function getWorkerCount() {
   const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
@@ -294,4 +297,20 @@ module.exports = {
     }
   },
 
+  async inspectNodes(req, res, next) {
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+      res.status(404).send("Manager node does not exist.");
+    }
+
+    const managerIP = getManagerIP();
+
+    try {
+      
+      let nodeMetrics = await getClusterMetrics(managerIP);
+
+      res.json(nodeMetrics);
+    } catch (err) {
+      console.log(err);
+    }
+  },
 };
