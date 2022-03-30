@@ -113,34 +113,6 @@ module.exports = {
     }
   },
 
-  async listNodes(req, res, next) {
-    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
-      res.status(404).send("Manager node does not exist.");
-    }
-
-    const manager1 = createDockerAPIConnection();
-
-    try {
-      // let nodes = await manager1.listNodes();
-      let nodes = await manager1.listNodes();
-      nodes = nodes.map(node => {
-        return {
-          Role: node.Spec.Role,
-          Availability: node.Spec.Availability,
-          // InternalAddr: node.Status.Addr
-        };
-      });
-      let data = await AXIOS.get(`https://prometheus-2.michaelfatigati.com/api/v1/`, {
-        query: "node_filesystem_size_bytes"
-      });
-      console.log(data.data);
-
-      res.json(nodes);
-    } catch (err) {
-      console.log(err);
-    }
-  },
-
   async canaryDeploy(req, res, next) {
     const appName = req.params.appName;
     // TODO: Add check for app's existence, respond with 400 if it doesn't exist

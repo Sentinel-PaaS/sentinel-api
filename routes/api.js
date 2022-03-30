@@ -4,6 +4,7 @@ const upload = multer({ dest: 'uploads/' });
 const router = express.Router();
 const appsController = require('../controllers/apps');
 const clusterController = require('../controllers/cluster');
+const AXIOS = require('axios');
 
 // Routes for apps controller
 // Get list of all running apps
@@ -13,7 +14,7 @@ router.get('/apps', appsController.listServices);
 router.get('/apps/:appName', appsController.inspectService);
 
 // Inspect the status of a particular service
-router.get('/cluster', appsController.listNodes);
+router.get('/cluster', clusterController.inspectNodes);
 
 // Inspect the status of a particular service
 router.get('/apps/:id/logs', appsController.getServiceLogs);
