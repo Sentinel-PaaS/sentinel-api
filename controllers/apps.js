@@ -130,6 +130,8 @@ module.exports = {
     const appHasDatabase = req.body.appHasDatabase;
     const dbUsername = req.body.dbUsername;
     const dbPassword = req.body.dbPassword;
+    const dbName = req.body.dbName;
+    const dbHost = req.body.dbHost;
 
     let playbook;
     if (appHasDatabase) {
@@ -144,6 +146,8 @@ module.exports = {
         productionWeight,
         dbUsername,
         dbPassword,
+        dbName,
+        dbHost
       });
     } else {
       playbook = new Ansible.Playbook().playbook('ansible/deploy_canary_no_db').variables({
@@ -169,6 +173,20 @@ module.exports = {
     });
   },
 
+
+  async upload(req, res, next) {
+    console.log(req)
+    if (!req.files) {
+      res.status(400).send('No file uploaded')
+    } else {
+      let dbFile = req.files.app_db
+
+      dbFile.mv(__dirname + '/../assets/sql/' + req.params.appName + '_db.sql')
+      res.status(200).send('File Uploaded')
+    }
+  },
+
+  
   async deploy(req, res, next) {
     const appName = req.body.appName;
     const productionImagePath = req.body.productionImagePath;
@@ -177,11 +195,12 @@ module.exports = {
     const appHasDatabase = req.body.appHasDatabase;
     const dbUsername = req.body.dbUsername;
     const dbPassword = req.body.dbPassword;
+    const dbHost = req.body.dbHost;
+    const dbName = req.body.dbName;
     const dbCreateSchemaOnDeploy = req.body.dbCreateSchemaOnDeploy;
-    const sqlFile = req.file;
 
     let playbook;
-    if (appHasDatabase) {
+    if (appHasDatabase && !dbCreateSchemaOnDeploy) {
       playbook = new Ansible.Playbook().playbook('ansible/deploy_production_with_db').variables({
         appName,
         productionImagePath,
@@ -189,6 +208,19 @@ module.exports = {
         productionPort,
         dbUsername,
         dbPassword,
+        dbHost,
+        dbName,
+      });
+    } else if (appHasDatabase && dbCreateSchemaOnDeploy) {
+      playbook = new Ansible.Playbook().playbook('ansible/deploy_production_with_db_sql').variables({
+        appName,
+        productionImagePath,
+        hostname,
+        productionPort,
+        dbUsername,
+        dbPassword,
+        dbHost,
+        dbName,
       });
     } else {
       playbook = new Ansible.Playbook().playbook('ansible/deploy_production_no_db').variables({

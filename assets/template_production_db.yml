@@ -1,6 +1,5 @@
 ---
 version: "3.7"
-
 services:
   production:
     image: {{ productionImagePath }}
@@ -29,31 +28,12 @@ services:
       labels:
         - traefik.enable=true
         - traefik.http.routers.{{ appName }}_rtr.rule=Host(`{{ hostname }}`)
+        # - traefik.http.routers.{{ appName }}_rtr.entrypoints=web
         - traefik.http.routers.{{ appName }}_rtr.entrypoints=websecure
         - traefik.http.routers.{{ appName }}_rtr.tls=true
         - traefik.http.routers.{{ appName }}_rtr.tls.certresolver=myresolver
+        # the port listed here MUST be the internal post listed in the image
         - traefik.http.services.{{ appName }}_production_svc.loadbalancer.server.port={{ productionPort }}
-        # Canary approach
-        - traefik.http.routers.{{ appName }}_rtr.service={{ appName }}_weighted_svc@file
-  canary:
-    image: {{ canaryImagePath }}
-    networks:
-      - traefik-public
-      - {{appName}}-network
-    depends_on:
-      - {{dbHost}}
-    environment:
-      - POSTGRES_USER={{dbUsername}}
-      - POSTGRES_PASSWORD={{dbPassword}}
-      - POSTGRES_DB={{dbName}}
-      - DB_PORT=5432
-      - POSTGRES_HOST={{dbHost}}
-    deploy:
-      mode: replicated
-      replicas: 1
-      labels:
-        - traefik.enable=true
-        - traefik.http.services.{{ appName }}_canary_svc.loadbalancer.server.port={{ canaryPort }}
 networks:
   traefik-public:
     driver: overlay
