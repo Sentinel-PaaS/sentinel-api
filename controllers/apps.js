@@ -106,7 +106,7 @@ module.exports = {
     const productionPort = req.body.productionPort;
     const canaryImagePath = req.body.canaryImagePath;
     const canaryPort = req.body.canaryPort;
-    const canaryWeight = parseInt(req.body.newWeight, 10);
+    const canaryWeight = parseInt(req.body.canaryWeight, 10);
     if (Number.isNaN(canaryWeight) || canaryWeight > 100 || canaryWeight < 0) {
       res.status(400).send("Must send an integer value 0-100 for canary traffic percentage.");
     }
@@ -114,6 +114,8 @@ module.exports = {
     const appHasDatabase = req.body.appHasDatabase;
     const dbUsername = req.body.dbUsername;
     const dbPassword = req.body.dbPassword;
+    const dbName = req.body.dbName;
+    const dbHost = req.body.dbHost;
 
     let playbook;
     if (appHasDatabase) {
@@ -128,6 +130,8 @@ module.exports = {
         productionWeight,
         dbUsername,
         dbPassword,
+        dbName,
+        dbHost
       });
     } else {
       playbook = new Ansible.Playbook().playbook('ansible/deploy_canary_no_db').variables({
@@ -155,6 +159,7 @@ module.exports = {
   },
 
   async upload(req, res, next) {
+    console.log(req)
     if (!req.files) {
       res.status(400).send('No file uploaded')
     } else {
