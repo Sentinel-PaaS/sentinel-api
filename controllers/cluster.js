@@ -262,7 +262,10 @@ module.exports = {
   },
 
   destroy(req, res, next) {
-    let workerNumber = getWorkerCount();
+    let workerNumber = 0;
+    if (fs.existsSync('../ansible/inventory/hosts')) {
+      workerNumber = getWorkerCount();
+    }
     const terraformDestroy = spawn("terraform", ["-chdir=./terraform", "destroy", "-auto-approve"]);
     terraformDestroy.stdout.on("data", data => {
       console.log(`stdout: ${data}`);
@@ -274,14 +277,14 @@ module.exports = {
 
     terraformDestroy.on('error', (error) => {
       console.log(`error: ${error.message}`);
-      res.status(500).send("Destroy failed.");
-      return 0;
+      // res.status(500).send("Destroy failed.");
+      // return 0;
     });
 
     terraformDestroy.on("close", code => {
       console.log(`child process exited with code ${code}`);
-      res.status(200).send("Destroy complete.");
-      return 1;
+      // res.status(200).send("Destroy complete.");
+      // return 1;
     });
 
     // delete manager key (all keys)
