@@ -36,6 +36,9 @@ router.post('/apps/:appName/rollback', appsController.canaryRollback);
 // Delete application
 router.delete('/apps/:appName', appsController.deleteApp);
 
+// Scale application
+router.put('/apps/:appName/scale', appsController.scale);
+
 // Routes for cluster controller
 // Initialize cluster
 router.post('/cluster/initialize', clusterController.init);
@@ -45,21 +48,5 @@ router.put('/cluster/scale', clusterController.scale);
 
 // Delete cluster
 router.delete('/destroy', clusterController.destroy);
-
-  // let playbook = new Ansible.Playbook().playbook('ansible/get_apps');
-  // playbook.inventory('inventory/hosts');
-  // let arr = [];
-  // playbook.on('stdout', function(data) {
-  //   arr.push(data.toString());
-  // });
-  // let promise = playbook.exec();
-  // promise.then((successResult) => {
-  //   console.log(successResult);
-  //   console.log(successResult.code); // Exit code of the executed command
-  //   console.log(successResult.output); // Standard output/error of the executed command
-  //   console.log(arr);
-  // }).catch((error) => {
-  //   console.error(error);
-  // });
 
 module.exports = router;

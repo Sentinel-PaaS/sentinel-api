@@ -34,7 +34,7 @@ function createDockerAPIConnection() {
 // Initialize Terraform
 async function initializeTerraform(req, res, next) {
   try {
-    const { stdout, stderr } = await exec("terraform -chdir=./terraform init -input=false");
+    const { stdout, stderr } = await exec("sudo terraform -chdir=./terraform init -input=false");
     console.log('stdout: ', stdout);
     console.error('stderr: ', stderr);
   } catch (error) {
@@ -65,7 +65,7 @@ async function initializeTerraform(req, res, next) {
 // Launch initial infrastructure
 async function applyTerraform(req, res, next) {
   try {
-    const { stdout, stderr } = await exec("terraform -chdir=./terraform apply -input=false -auto-approve");
+    const { stdout, stderr } = await exec("sudo terraform -chdir=./terraform apply -input=false -auto-approve");
     console.log('stdout: ', stdout);
     console.error('stderr: ', stderr);
   } catch (error) {

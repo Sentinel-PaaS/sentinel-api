@@ -111,7 +111,6 @@ module.exports = {
     } catch (err) {
       console.log(err);
     }
-
   },
 
   async listNodes(req, res, next) {
@@ -188,8 +187,7 @@ module.exports = {
     }
     playbook.inventory('ansible/inventory/hosts');
 
-    let promise = playbook.exec();
-    promise.then((successResult) => {
+    await playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
       console.log("success output: ", successResult.output); // Standard output/error of the executed command
       res.status(200).send("Canary deployed.");
@@ -273,11 +271,10 @@ module.exports = {
     // TODO: Add check for app's existence, respond with 400 if it doesn't exist
 
     let manager = createDockerAPIConnection();
-    let canaryService = manager.getService("catnip_catnip_canary");
+    let canaryService = manager.getService(`${appName}_canary`);
     let canaryServiceInspected = await canaryService.inspect();
     let updateImage = canaryServiceInspected.Spec.Labels["com.docker.stack.image"];
 
-    console.log(updateImage);
     let playbook = new Ansible.Playbook().playbook('ansible/promote_canary').variables({
       appName,
       updateImage
@@ -330,6 +327,28 @@ module.exports = {
       console.error(error);
       res.status(500).send("Something went wrong.");
     });
+  },
+
+  async scale(req, res, next) {
+    let appName = req.params.appName;
+    // TODO: Add check for app's existence, respond with 400 if it doesn't exist
+
+    let scaleNumber = req.body.scaleNumber;
+    let playbook = new Ansible.Playbook().playbook('ansible/scale_app').variables({
+      appName,
+      scaleNumber
+    });
+    playbook.inventory('ansible/inventory/hosts');
+
+    await playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send(`${appName} app scaled to ${scaleNumber} containers.`);
+    }).catch((error) => {
+      console.error(error);
+      res.status(500).send("Something went wrong.");
+    });
+
   },
 
 };
