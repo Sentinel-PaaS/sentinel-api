@@ -1,9 +1,0 @@
-http:
-  services:
-    canary:
-      weighted:
-        services:
-          - name: production_svc@docker
-            weight: 2
-          - name: canary_svc@docker
-            weight: 1

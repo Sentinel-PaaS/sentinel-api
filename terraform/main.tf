@@ -13,7 +13,7 @@ resource "aws_key_pair" "manager_kp" {
   public_key = tls_private_key.manager_pk.public_key_openssh
 
   provisioner "local-exec" { # Create a "managerKey.pem" on the API server.
-    command = "echo '${tls_private_key.manager_pk.private_key_pem}' > ~/.ssh/managerKey.pem"
+    command = "echo '${tls_private_key.manager_pk.private_key_pem}' > ../keys/managerKey.pem"
   }
   depends_on = [
     tls_private_key.manager_pk
