@@ -6,6 +6,7 @@ const fs = require('fs');
 const ini = require('ini');
 // const path = require("path");
 const AXIOS = require('axios');
+const { compileFunction } = require("vm");
 
 function getManagerIP() {
   const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
@@ -28,7 +29,7 @@ function createDockerAPIConnection() {
 module.exports = {
   // https://docs.docker.com/engine/api/v1.37/#operation/ServiceLogs
   getServiceLogs(req, res, next) {
-    if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
     const managerIP = getManagerIP();
@@ -38,12 +39,12 @@ module.exports = {
     result.then(success => {
       res.send(success.data);
     }).catch(err => {
-      console.log(err)
-    })
+      console.log(err);
+    });
   },
 
   listServices(req, res, next) {
-    if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
     const managerIP = getManagerIP();
@@ -52,19 +53,19 @@ module.exports = {
     result.then(success => {
       result = success.data;
       result = result.map(record => {
-            return {
-              serviceName: record.Spec.Name,
-              serviceID: record.ID,
-            };
-          });
+        return {
+          serviceName: record.Spec.Name,
+          serviceID: record.ID,
+        };
+      });
       res.send(result);
     }).catch(err => {
-      console.log(err)
-    })
+      console.log(err);
+    });
   },
 
   async inspectService(req, res, next) {
-    if (fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
     const managerIP = getManagerIP();
@@ -100,21 +101,21 @@ module.exports = {
               taskStatusTimestamp: task.Status.Timestamp,
               taskSlot: task.Slot,
               taskContainer: task.Status.ContainerStatus.ContainerID
-            })
+            });
           }
-        })
+        });
       });
-      
+
       let result = services;
       res.send(result);
-    } catch(err) {
-      console.log(err)
+    } catch (err) {
+      console.log(err);
     }
 
   },
 
   async listNodes(req, res, next) {
-    if (fs.existsSync('../ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
       res.status(404).send("Manager node does not exist.");
     }
 
@@ -128,15 +129,15 @@ module.exports = {
           Role: node.Spec.Role,
           Availability: node.Spec.Availability,
           // InternalAddr: node.Status.Addr
-        }
-      })
+        };
+      });
       let data = await AXIOS.get(`https://prometheus-2.michaelfatigati.com/api/v1/`, {
         query: "node_filesystem_size_bytes"
       });
       console.log(data.data);
 
       res.json(nodes);
-    } catch(err) {
+    } catch (err) {
       console.log(err);
     }
   },
@@ -150,7 +151,7 @@ module.exports = {
     const productionPort = req.body.productionPort;
     const canaryImagePath = req.body.canaryImagePath;
     const canaryPort = req.body.canaryPort;
-    const canaryWeight = parseInt(req.body.newWeight, 10);
+    const canaryWeight = parseInt(req.body.canaryWeight, 10);
     if (Number.isNaN(canaryWeight) || canaryWeight > 100 || canaryWeight < 0) {
       res.status(400).send("Must send an integer value 0-100 for canary traffic percentage.");
     }
@@ -185,7 +186,7 @@ module.exports = {
         productionWeight,
       });
     }
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     let promise = playbook.exec();
     promise.then((successResult) => {
@@ -227,7 +228,7 @@ module.exports = {
         productionPort,
       });
     }
-    playbook.inventory('inventory/hosts');
+    playbook.inventory('ansible/inventory/hosts');
 
     let promise = playbook.exec();
     promise.then((successResult) => {
@@ -271,9 +272,26 @@ module.exports = {
     let appName = req.params.appName;
     // TODO: Add check for app's existence, respond with 400 if it doesn't exist
 
-    let services = await manager1.listServices();
-    console.log(services);
-    // let canaryImage = services.
+    let manager = createDockerAPIConnection();
+    let canaryService = manager.getService("catnip_catnip_canary");
+    let canaryServiceInspected = await canaryService.inspect();
+    let updateImage = canaryServiceInspected.Spec.Labels["com.docker.stack.image"];
+
+    console.log(updateImage);
+    let playbook = new Ansible.Playbook().playbook('ansible/promote_canary').variables({
+      appName,
+      updateImage
+    });
+    playbook.inventory('ansible/inventory/hosts');
+
+    await playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("Canary promoted.");
+    }).catch((error) => {
+      console.error(error);
+      res.status(500).send("Something went wrong.");
+    });
   },
 
   canaryRollback(req, res, next) {

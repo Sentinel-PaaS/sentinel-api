@@ -1,0 +1,7 @@
+---
+- name: Promote Canary
+  hosts: managers
+  become: true
+  tasks:
+    - name: Run docker service update command
+      command: docker service update --image {{ updateImage }} {{ appName }}_production

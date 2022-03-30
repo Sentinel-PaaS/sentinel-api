@@ -2,7 +2,7 @@
 version: "3.7"
 
 services:
-  {{ appName }}_production:
+  production:
     image: {{ productionImagePath }}
     networks:
       - traefik-public
