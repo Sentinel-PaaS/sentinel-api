@@ -12,8 +12,13 @@ const HTTPS = require('https');
 const {getClusterMetrics} = require('./cluster_metrics');
 
 function getWorkerCount() {
-  const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
-  return Object.keys(hosts.workers).length;
+  let workerNumber = 0;
+  if (fs.existsSync('./ansible/inventory/hosts')) {
+    const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
+    workerNumber = Object.keys(hosts.workers).length;
+  }
+
+  return workerNumber;
 }
 
 function getManagerIP() {
@@ -41,8 +46,9 @@ async function initializeTerraform(req, res, next) {
     console.log('stdout: ', stdout);
     console.error('stderr: ', stderr);
   } catch (error) {
-    res.status(500).send({ error });
-    return 0;
+    console.error(error);
+    // res.status(500).send({ error });
+    // return 0;
   }
 
   // const terraformInit = spawn("sudo", ["terraform", "-chdir=./terraform", "init", "-input=false"]);
@@ -72,8 +78,9 @@ async function applyTerraform(req, res, next) {
     console.log('stdout: ', stdout);
     console.error('stderr: ', stderr);
   } catch (error) {
-    res.status(500).send({ error });
-    return 0;
+    console.error(error);
+    // res.status(500).send({ error });
+    // return 0;
   }
   // const terraformApply = spawn("sudo", ["terraform", "-chdir=./terraform", "apply", "-input=false", "-auto-approve"]);
   // terraformApply.stdout.on("data", data => {
@@ -180,17 +187,18 @@ function scaleDown(req, res, next) {
     res.status(400).send("You are down to one instance. If you want zero instances, please use the destroy command.");
     return 0;
   }
+
   fs.unlinkSync(`terraform/worker${workerNumber}.tf`);
   workerNumber--;
 
   let outputContent = `resource "local_file" "hosts" {
-    content  = <<-DOC
-      [managers]
-      \${aws_instance.manager1.public_ip} ansible_user=ec2-user ansible_private_key_file=./keys/managerKey.pem
-      [managers:vars]
-      manager_private_ip=\${aws_instance.manager1.private_ip}
-      [workers]
-  `;
+  content  = <<-DOC
+    [managers]
+    \${aws_instance.manager1.public_ip} ansible_user=ec2-user ansible_private_key_file=./keys/managerKey.pem
+    [managers:vars]
+    manager_private_ip=\${aws_instance.manager1.private_ip}
+    [workers]
+`;
 
   for (let x = 1; x <= workerNumber; x++) {
     outputContent += `    \${aws_instance.worker${x}.public_ip} ansible_user=ec2-user ansible_private_key_file=./keys/workerKey${x}.pem\n`;
@@ -208,12 +216,16 @@ module.exports = {
     await initializeTerraform(req, res, next);
     await applyTerraform(req, res, next);
     try {
-      const { stdout, stderr } = await exec("chmod 400 ./keys/managerKey.pem");
-      console.log('stdout: permissions changed, ', stdout);
-      console.error('stderr: ', stderr);
+      const { chownStdout, chownStderr } = await exec("sudo chown $USER ./keys/managerKey.pem");
+      console.log('stdout: ownership changed, ', chownStdout);
+      console.error('stderr: ', chownStderr);
+      const { chmodStdout, chmodStderr } = await exec("sudo chmod 700 ./keys/managerKey.pem");
+      console.log('stdout: permissions changed, ', chmodStdout);
+      console.error('stderr: ', chmodStderr);
     } catch (error) {
-      res.status(500).send({ error });
-      return 0;
+      console.error(error);
+      // res.status(500).send({ error });
+      // return 0;
     }
     await new Promise(r => setTimeout(r, 10000)); // Sleep for 10 seconds to ensure the infrastructure is up
     runAnsiblePlaybook(req, res, next, "playbook", "Sentinel init complete.");
@@ -225,11 +237,14 @@ module.exports = {
     await applyTerraform(req, res, next);
     if (req.body.scaleCluster === 'up') {
       try {
-        const { stdout, stderr } = await exec(`chmod 400 ./keys/workerKey${getWorkerCount()}.pem`);
-        console.log('stdout: permissions changed, ', stdout);
-        console.error('stderr: ', stderr);
+        const { chownStdout, chownStderr } = await exec(`sudo chown $USER ./keys/workerKey${getWorkerCount()}.pem`);
+        console.log('stdout: ownership changed, ', chownStdout);
+        console.error('stderr: ', chownStderr);
+        const { chmodStdout, chmodStderr } = await exec(`sudo chmod 700 ./keys/workerKey${getWorkerCount()}.pem`);
+        console.log('stdout: permissions changed, ', chmodStdout);
+        console.error('stderr: ', chmodStderr);
       } catch (error) {
-        res.status(500).send({ error });
+        // res.status(500).send({ error });
         return 0;
       }
       let manager = createDockerAPIConnection();
@@ -239,6 +254,7 @@ module.exports = {
       const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
       let newWorkerIP = Object.keys(hosts.workers)[getWorkerCount() - 1].split(' ')[0];
 
+      await new Promise(r => setTimeout(r, 10000)); // Sleep for 10 seconds to ensure the infrastructure is up
       let playbook = new Ansible.Playbook().playbook('ansible/deploy_new_worker').variables({
         swarmToken,
         newWorkerIP,
@@ -264,11 +280,9 @@ module.exports = {
     }
   },
 
-  destroy(req, res, next) {
-    let workerNumber = 0;
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      workerNumber = getWorkerCount();
-    }
+  async destroy(req, res, next) {
+    let workerNumber = getWorkerCount();
+
     const terraformDestroy = spawn("terraform", ["-chdir=./terraform", "destroy", "-auto-approve"]);
     terraformDestroy.stdout.on("data", data => {
       console.log(`stdout: ${data}`);
@@ -294,7 +308,22 @@ module.exports = {
     fs.unlinkSync(`./keys/managerKey.pem`);
     for (let x = 1; x <= workerNumber; x++) {
       fs.unlinkSync(`./keys/workerKey${x}.pem`);
+      fs.unlinkSync(`terraform/worker${x}.tf`);
     }
+
+    let outputContent = `resource "local_file" "hosts" {
+  content  = <<-DOC
+    [managers]
+    \${aws_instance.manager1.public_ip} ansible_user=ec2-user ansible_private_key_file=./keys/managerKey.pem
+    [managers:vars]
+    manager_private_ip=\${aws_instance.manager1.private_ip}
+    [workers]
+`;
+    outputContent += `    DOC
+  filename = "../ansible/inventory/hosts"
+}`;
+
+    fs.writeFileSync(`terraform/output.tf`, outputContent);
   },
 
   async inspectNodes(req, res, next) {
