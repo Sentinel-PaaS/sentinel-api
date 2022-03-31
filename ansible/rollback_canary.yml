@@ -4,7 +4,7 @@
   become: true
   tasks:
     - name: Deploy original production stack
-      command: sudo docker stack deploy -c /{{ appName }}_production.yml "{{ appName }}"
+      command: sudo docker stack deploy -c /{{ appName }}_production.yml {{ appName }}
 - name: Remove canary service
   hosts: managers
   become: true

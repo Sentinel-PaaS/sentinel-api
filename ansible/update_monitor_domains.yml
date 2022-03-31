@@ -1,0 +1,11 @@
+---
+- name: Update traefik stack with new domain names for monitoring sites
+  hosts: managers
+  become: true
+  tasks:
+    - name: Populate traefik-prometheus-grafana compose file and copy to manager
+      template:
+        src: ../assets/stack-traefik-main.yaml
+        dest: /stack-traefik-main.yaml
+    - name: Update traefik stack
+      command: sudo docker stack deploy -c /stack-traefik-main.yaml traefik

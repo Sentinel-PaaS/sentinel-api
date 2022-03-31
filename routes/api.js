@@ -4,6 +4,8 @@ const router = express.Router();
 const appsController = require('../controllers/apps');
 const clusterController = require('../controllers/cluster');
 const AXIOS = require('axios');
+const { validateAuthToken } = require('../controllers/authenticate') //Needs to be added to each route as a middleware
+const { validateProductionAppExists, validateCanaryAppExists } = require('../controllers/validate_app')
 
 // Routes for apps controller
 // Get list of all running apps
@@ -23,22 +25,22 @@ router.post('/apps', appsController.deploy);
 router.post('/apps/:appName/upload', appsController.upload)
 
 // Deploy a canary (currently works with just `/api/apps/randomApp/canary`)
-router.post('/apps/:appName/canary', appsController.canaryDeploy);
+router.post('/apps/:appName/canary', validateProductionAppExists, appsController.canaryDeploy);
 
 // Change canary traffic splitting weights
-router.put('/apps/:appName/canary', appsController.adjustTraffic);
+router.put('/apps/:appName/canary', validateCanaryAppExists, appsController.adjustTraffic);
 
 // Promote canary version
-router.post('/apps/:appName/promote', appsController.canaryPromote);
+router.post('/apps/:appName/promote', validateCanaryAppExists, appsController.canaryPromote);
 
 // Rollback canary
-router.post('/apps/:appName/rollback', appsController.canaryRollback);
+router.post('/apps/:appName/rollback', validateCanaryAppExists, appsController.canaryRollback);
 
 // Delete application
-router.delete('/apps/:appName', appsController.deleteApp);
+router.delete('/apps/:appName', validateProductionAppExists, appsController.deleteApp);
 
 // Scale application
-router.put('/apps/:appName/scale', appsController.scale);
+router.put('/apps/:appName/scale', validateProductionAppExists, appsController.scale);
 
 // Routes for cluster controller
 // Initialize cluster
@@ -49,5 +51,7 @@ router.put('/cluster/scale', clusterController.scale);
 
 // Delete cluster
 router.delete('/destroy', clusterController.destroy);
+
+router.post('/cluster/monitor/domains', clusterController.setDomains);
 
 module.exports = router;
