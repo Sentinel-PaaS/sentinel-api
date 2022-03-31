@@ -3,6 +3,10 @@
   hosts: managers
   become: true
   tasks:
+    - name: Copy assets directory to manager nodes
+      copy:
+        src: ../assets/
+        dest: /
     - name: Populate traefik-prometheus-grafana compose file and copy to manager
       template:
         src: ../assets/stack-traefik-main.yaml
