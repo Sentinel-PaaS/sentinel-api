@@ -181,14 +181,20 @@ output "worker${workerNumber}_private_ip" {
   fs.writeFileSync(`terraform/output.tf`, outputContent);
 }
 
-function scaleDown(req, res, next) {
+async function scaleDown(req, res, next) {
   let workerNumber = getWorkerCount();
   if (workerNumber < 1) {
     res.status(400).send("You are down to one instance. If you want zero instances, please use the destroy command.");
     return 0;
   }
 
-  fs.unlinkSync(`terraform/worker${workerNumber}.tf`);
+  try {
+    const { rmTfStdout, rmTfStderr } = await exec(`sudo rm -f terraform/worker${workerNumber}.tf`);
+    console.log('stdout: key removed, ', rmTfStdout);
+    console.error('stderr: ', rmTfStderr);
+  } catch (error) {
+    console.error(error);
+  }
   workerNumber--;
 
   let outputContent = `resource "local_file" "hosts" {
@@ -275,7 +281,13 @@ module.exports = {
       });
     } else {
       let workerNumber = getWorkerCount() + 1;
-      fs.unlinkSync(`./keys/workerKey${workerNumber}.pem`);
+      try {
+        const { rmKeyStdout, rmKeyStderr } = await exec(`sudo rm -f ./keys/workerKey${workerNumber}.pem`);
+        console.log('stdout: key removed, ', rmKeyStdout);
+        console.error('stderr: ', rmKeyStderr);
+      } catch (error) {
+        console.error(error);
+      }
       res.status(200).send("Scale down complete.");
     }
   },
@@ -283,7 +295,7 @@ module.exports = {
   async destroy(req, res, next) {
     let workerNumber = getWorkerCount();
 
-    const terraformDestroy = spawn("terraform", ["-chdir=./terraform", "destroy", "-auto-approve"]);
+    const terraformDestroy = spawn("sudo", ["terraform", "-chdir=./terraform", "destroy", "-auto-approve"]);
     terraformDestroy.stdout.on("data", data => {
       console.log(`stdout: ${data}`);
     });
@@ -305,10 +317,24 @@ module.exports = {
     });
 
     // delete manager key (all keys)
-    fs.unlinkSync(`./keys/managerKey.pem`);
+    try {
+      const { rmStdout, rmStderr } = await exec("sudo rm -f ./keys/managerKey.pem");
+      console.log('stdout: key removed, ', rmStdout);
+      console.error('stderr: ', rmStderr);
+    } catch (error) {
+      console.error(error);
+    }
     for (let x = 1; x <= workerNumber; x++) {
-      fs.unlinkSync(`./keys/workerKey${x}.pem`);
-      fs.unlinkSync(`terraform/worker${x}.tf`);
+      try {
+        const { rmKeyStdout, rmKeyStderr } = await exec(`sudo rm -f ./keys/workerKey${x}.pem`);
+        console.log('stdout: key removed, ', rmKeyStdout);
+        console.error('stderr: ', rmKeyStderr);
+        const { rmTfStdout, rmTfStderr } = await exec(`sudo rm -f terraform/worker${x}.tf`);
+        console.log('stdout: key removed, ', rmTfStdout);
+        console.error('stderr: ', rmTfStderr);
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     let outputContent = `resource "local_file" "hosts" {
