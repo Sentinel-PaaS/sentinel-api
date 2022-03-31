@@ -115,21 +115,6 @@ module.exports = {
 
   async canaryDeploy(req, res, next) {
     const appName = req.params.appName;
-    
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      res.status(404).send("Manager node does not exist.");
-    }
-    const manager1 = createDockerAPIConnection();
-    let services = await manager1.listServices();
-    services = services.filter(record => {
-      if (record.Spec.Name.match(appName + '_production')) {
-        return record
-      }
-    });
-    if (services.length === 0) {
-      res.status(404).send("Application does not exist.");
-    }
-
     const productionImagePath = req.body.productionImagePath;
     const hostname = req.body.hostname;
     const productionPort = req.body.productionPort;
@@ -259,23 +244,6 @@ module.exports = {
 
   async adjustTraffic(req, res, next) {
     const appName = req.params.appName;
-
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      res.status(404).send("Manager node does not exist.");
-    }
-
-    const manager1 = createDockerAPIConnection();
-    let services = await manager1.listServices();
-    services = services.filter(record => {
-      if (record.Spec.Name.match(appName + '_canary')) {
-        return record
-      }
-    });
-
-    if (services.length === 0) {
-      res.status(404).send("Canary does not exist for this application.");
-    }
-
     let canaryWeight = parseInt(req.body.newWeight, 10);
     if (Number.isNaN(canaryWeight) || canaryWeight > 100 || canaryWeight < 0) {
       res.status(400).send("Must send an integer value 0-100 for canary traffic percentage.");
@@ -302,23 +270,6 @@ module.exports = {
 
   async canaryPromote(req, res, next) {
     let appName = req.params.appName;
-
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      res.status(404).send("Manager node does not exist.");
-    }
-
-    const manager1 = createDockerAPIConnection();
-    let services = await manager1.listServices();
-    services = services.filter(record => {
-      if (record.Spec.Name.match(record.Spec.Name.match(appName + '_canary'))) {
-        return record
-      }
-    });
-
-    if (services.length === 0) {
-      res.status(404).send("Canary does not exist for this application.");
-    }
-
     let manager = createDockerAPIConnection();
     let canaryService = manager.getService(`${appName}_canary`);
     let canaryServiceInspected = await canaryService.inspect();
@@ -340,30 +291,13 @@ module.exports = {
     });
   },
 
-  canaryRollback(req, res, next) {
+  async canaryRollback(req, res, next) {
     let appName = req.params.appName;
-
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      res.status(404).send("Manager node does not exist.");
-    }
-
-    const manager1 = createDockerAPIConnection();
-    let services = await manager1.listServices();
-    services = services.filter(record => {
-      if (record.Spec.Name.match(record.Spec.Name.match(appName + '_canary'))) {
-        return record
-      }
-    });
-
-    if (services.length === 0) {
-      res.status(404).send("Canary does not exist for this application.");
-    }
 
     let playbook = new Ansible.Playbook().playbook('ansible/rollback_canary').variables({
       appName,
     });
-    playbook.inventory('ansible/inventory/hosts');
-
+    playbook.inventory('ansible/inventory/hosts');    //
     playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
       console.log("success output: ", successResult.output); // Standard output/error of the executed command
@@ -374,25 +308,8 @@ module.exports = {
     });
   },
 
-  deleteApp(req, res, next) {
+  async deleteApp(req, res, next) {
     let appName = req.params.appName;
-    
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      res.status(404).send("Manager node does not exist.");
-    }
-
-    const manager1 = createDockerAPIConnection();
-    let services = await manager1.listServices();
-    services = services.filter(record => {
-      if (record.Spec.Name.match(appName + '_production')) {
-        return record
-      }
-    });
-
-    if (services.length === 0) {
-      res.status(404).send("Application does not exist.");
-    }
-
     let playbook = new Ansible.Playbook().playbook('ansible/delete_app').variables({
       appName,
     });
@@ -410,23 +327,6 @@ module.exports = {
 
   async scale(req, res, next) {
     let appName = req.params.appName;
-
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      res.status(404).send("Manager node does not exist.");
-    }
-
-    const manager1 = createDockerAPIConnection();
-    let services = await manager1.listServices();
-    services = services.filter(record => {
-      if (record.Spec.Name.match(appName + '_production')) {
-        return record
-      }
-    });
-
-    if (services.length === 0) {
-      res.status(404).send("Application does not exist.");
-    }
-
     let scaleNumber = req.body.scaleNumber;
     let playbook = new Ansible.Playbook().playbook('ansible/scale_app').variables({
       appName,
