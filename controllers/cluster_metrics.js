@@ -81,6 +81,8 @@ metrics.map(record1 => {
   })
 })
 
+// could calculate the percentage memory free in one query with `100 - (100 * node_memory_MemFree_bytes / node_memory_MemTotal_bytes)`
+
 data = await AXIOS.get(`http://prometheus-2.michaelfatigati.com/api/v1/query`, {
   params: {
     query: "node_memory_MemTotal_bytes"
