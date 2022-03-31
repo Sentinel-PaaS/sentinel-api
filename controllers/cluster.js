@@ -121,7 +121,7 @@ function runAnsiblePlaybook(req, res, next, playbookName, successMessage) {
   });
 }
 
-function scaleUp(req, res, next) {
+async function scaleUp(req, res, next) {
   // Read the number of workers already existing and add one
   let workerNumber = getWorkerCount() + 1;
 
@@ -161,6 +161,18 @@ output "worker${workerNumber}_private_ip" {
 `;
 
   fs.writeFileSync(`terraform/worker${workerNumber}.tf`, workerContent);
+  try {
+    const { chownStdout, chownStderr } = await exec(`sudo chown $USER ./terraform/worker${workerNumber}.tf`);
+    console.log('stdout: ownership changed, ', chownStdout);
+    console.error('stderr: ', chownStderr);
+    const { chmodStdout, chmodStderr } = await exec(`sudo chmod 700 ./terraform/worker${workerNumber}.tf`);
+    console.log('stdout: permissions changed, ', chmodStdout);
+    console.error('stderr: ', chmodStderr);
+  } catch (error) {
+    console.error(error);
+    // res.status(500).send({ error });
+    // return 0;
+  }
 
   let outputContent = `resource "local_file" "hosts" {
   content  = <<-DOC
@@ -238,7 +250,11 @@ module.exports = {
   },
 
   async scale(req, res, next) {
-    req.body.scaleCluster === 'up' ? scaleUp(req, res, next) : scaleDown(req, res, next);
+    if (req.body.scaleCluster === 'up') {
+      await scaleUp(req, res, next);
+    } else {
+      await scaleDown(req, res, next);
+    }
 
     await applyTerraform(req, res, next);
     if (req.body.scaleCluster === 'up') {
