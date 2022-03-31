@@ -208,7 +208,7 @@ module.exports = {
     await initializeTerraform(req, res, next);
     await applyTerraform(req, res, next);
     try {
-      const { stdout, stderr } = await exec("chmod 400 ./keys/managerKey.pem");
+      const { stdout, stderr } = await exec("sudo chmod 400 ./keys/managerKey.pem");
       console.log('stdout: permissions changed, ', stdout);
       console.error('stderr: ', stderr);
     } catch (error) {
@@ -312,4 +312,30 @@ module.exports = {
       console.log(err);
     }
   },
+
+  async setDomains(req, res, next) {
+    let traefikHostName = req.body.traefikHostName;
+    let prometheusHostName = req.body.prometheusHostName;
+    let grafanaHostName = req.body.grafanaHostName;
+
+    let playbook = new Ansible.Playbook().playbook('ansible/update_monitor_domains').variables({
+      traefikHostName,
+      prometheusHostName,
+      grafanaHostName
+    });
+    playbook.inventory('ansible/inventory/hosts');
+    playbook.forks(1);
+    playbook.on('stdout', function(data) { console.log(data.toString()); });
+    playbook.on('stderr', function(data) { console.log(data.toString()); });
+    playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("Domains successfully updated.");
+      return 1;
+    }).catch((error) => {
+      console.error(error);
+      res.status(500).send(`error: ${error}`);
+      return 0;
+    });
+  }
 };

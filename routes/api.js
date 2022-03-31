@@ -50,4 +50,6 @@ router.put('/cluster/scale', clusterController.scale);
 // Delete cluster
 router.delete('/destroy', clusterController.destroy);
 
+router.post('/cluster/monitor/domains', clusterController.setDomains);
+
 module.exports = router;
