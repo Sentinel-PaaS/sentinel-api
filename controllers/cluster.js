@@ -10,7 +10,7 @@ const ini = require("ini");
 const AXIOS = require('axios');
 const HTTPS = require('https');
 const {getClusterMetrics} = require('./cluster_metrics');
-const bcrypt = require("bcrypt");
+const bcryptjs = require("bcryptjs");
 
 function getWorkerCount() {
   let workerNumber = 0;
@@ -328,12 +328,18 @@ module.exports = {
   },
 
   async setDomains(req, res, next) {
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+      res.status(404).send("Manager node does not exist.");
+    }
+
+    const managerIP = getManagerIP();
+
     let traefikHostName = req.body.traefikHostName;
     let prometheusHostName = req.body.prometheusHostName;
     let grafanaHostName = req.body.grafanaHostName;
     let password = req.body.password;
 
-    bcrypt.hash(password, 10).then(hashed => {
+    bcryptjs.hash(password, 10).then(hashed => {
       // let escapedHash = hashed;
       let escapedHash = hashed.replace(/\$/g, "$$$$");
       //  escapedHash = escapedHash.replace(/\$\$/, "$")
@@ -352,7 +358,9 @@ module.exports = {
       playbook.exec().then((successResult) => {
         console.log("success code: ", successResult.code); // Exit code of the executed command
         console.log("success output: ", successResult.output); // Standard output/error of the executed command
-        res.status(200).send("Domains successfully updated.");
+        res.status(200).send(`Domains successfully updated.
+As a reminder, you will need to have all these hostnames pointing to the following IP address: ${managerIP}
+        `);
         return 1;
       }).catch((error) => {
         console.error(error);
