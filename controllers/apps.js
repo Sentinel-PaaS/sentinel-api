@@ -28,16 +28,37 @@ function createDockerAPIConnection() {
 
 module.exports = {
   // https://docs.docker.com/engine/api/v1.37/#operation/ServiceLogs
-  getServiceLogs(req, res, next) {
+
+  async getServiceLogs(req, res, next) {
+    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
+      res.status(404).send("Manager node does not exist.");
+    }
     const managerIP = getManagerIP();
 
-    let serviceID = req.params.id;
-    let result = AXIOS.get(`http://${managerIP}:2375/services/${serviceID}/logs?stdout=true&stderr=true`);
-    result.then(success => {
-      res.send(success.data);
-    }).catch(err => {
-      console.error(err);
-    });
+    let serviceNameToLog = req.params.appName;
+
+    try {
+      let result = await AXIOS.get(`http://${managerIP}:2375/services`);
+      let services = result.data;
+      let justNamesAndIDs = services.map(record => {
+        return {
+          serviceName: record.Spec.Name,
+          serviceID: record.ID,
+        };
+      });
+
+      let idForLogs = justNamesAndIDs.filter(record => {
+        console.log(record.serviceName, serviceNameToLog);
+        return record.serviceName === serviceNameToLog;
+      })[0].serviceID;
+
+      let result2 = await AXIOS.get(`http://${managerIP}:2375/services/${idForLogs}/logs?stdout=true&stderr=true`);
+      let logs = result2.data;
+      res.send(logs);
+    } catch(err) {
+      console.log(err);
+      res.send(err);
+    }
   },
 
   listServices(req, res, next) {
@@ -62,7 +83,7 @@ module.exports = {
     const managerIP = getManagerIP();
 
     let serviceName = req.params.appName;
-    let regex = /.*(?=_)/;
+    let regex = /.*(?=[_-])/;
     let serviceNameFirstPart = serviceName.match(regex)[0];
 
     try {
@@ -76,7 +97,7 @@ module.exports = {
         return {
           serviceName: record.Spec.Name,
           serviceID: record.ID,
-          serviceReplicas: record.Spec.Mode.Replicated.Replicas,
+          serviceReplicas: record.Spec.Mode.Replicated ? record.Spec.Mode.Replicated.Replicas : 0,
           servicesTasks: []
         };
       });
@@ -93,12 +114,44 @@ module.exports = {
               taskSlot: task.Slot,
               taskContainer: task.Status.ContainerStatus.ContainerID
             });
-          }
+          };
         });
       });
 
       let result = services;
-      res.send(result);
+
+      let anyNotRunning = false;
+      result.forEach(service => {
+        service.servicesTasks.forEach(task => {
+          if (task.taskStatus !== "running") {
+            anyNotRunning = true;
+          }
+        })
+      });
+      let message = "";
+      if (result.length > 1) {
+        if (anyNotRunning) {
+          message = `This service has a canary version, and there seems to be a problem with either an instance of the canary version, or the production version. See "taskStatus" details below.
+For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL MONITOR INIT, or inspect app logs with SENTINEL INSPECT LOGS`;
+        } else {
+          message = `This service has a canary version, and all instances of canary and production appear to be running. See "taskStatus" details below.
+For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL MONITOR INIT, or inspect app logs with SENTINEL INSPECT LOGS`;
+        }
+      } else {
+        if (anyNotRunning) {
+          message = `This service has no canary version, but there seems to be a problem with the production version. See "taskStatus" details below.
+For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL MONITOR INIT, or inspect app logs with SENTINEL INSPECT LOGS.`;
+        } else {
+          message = `This service has no canary version, and all instances appear to be running. See "taskStatus" details below.
+For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL MONITOR INIT, or inspect app logs with SENTINEL INSPECT LOGS`;
+        }
+      }
+
+      let response = {
+        message,
+        data: result
+      };
+      res.send(response);
     } catch (err) {
       console.error(err);
     }

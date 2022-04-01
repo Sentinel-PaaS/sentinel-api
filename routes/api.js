@@ -17,8 +17,8 @@ router.get('/apps/:appName', validateManagerExists, appsController.inspectServic
 // Inspect the status of a particular service
 router.get('/cluster', validateManagerExists, clusterController.inspectNodes);
 
-// Inspect the status of a particular service
-router.get('/apps/:id/logs', validateManagerExists, appsController.getServiceLogs);
+// Inspect the logs of a particular service
+router.get('/apps/:appName/logs', validateManagerExists, appsController.getServiceLogs);
 
 // Deploy a new app (if sql file provided, it will be uploaded first)
 router.post('/apps', validateManagerExists, appsController.deploy);
