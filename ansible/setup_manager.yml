@@ -1,0 +1,61 @@
+---
+- name: Copy docker config files
+  hosts: managers
+  become: true
+  gather_facts: False
+  tasks:
+    - name: make folder for config
+      command: mkdir -p /etc/docker
+    - name: make folder for override
+      command: mkdir -p /etc/systemd/system/docker.service.d/
+    - name: copy daemon config file
+      copy:
+        src: ./daemon.json
+        dest: /etc/docker/daemon.json
+    - name: copy config override file
+      copy:
+        src: ./override.conf
+        dest: /etc/systemd/system/docker.service.d/override.conf
+- name: Install Docker
+  hosts: all
+  become: true
+  gather_facts: False
+  tasks:
+    - name: Update yum package manager
+      command: yum update -y
+    - name: Install Docker
+      command: yum install docker -y
+    - name: Enable docker
+      command: systemctl enable docker
+    - name: Start docker
+      command: systemctl start docker
+    # this is a convienience for when we have to ssh into the nodes.
+    - name: Add sudo permissions for default ec2-user with docker
+      command: sudo usermod -aG docker ec2-user
+- name: Init Swarm Manager
+  hosts: managers
+  become: true
+  gather_facts: False
+  tasks:
+    - debug:
+        var: "{{ hostvars[groups['managers'][0]].manager_private_ip }}"
+    - name: Swarm Init
+      command: docker swarm init --advertise-addr {{ hostvars[groups['managers'][0]].manager_private_ip }}
+- name: Copy Docker Compose and Traefik config files
+  hosts: managers
+  become: true
+  tasks:
+    - name: Copy files
+      copy:
+        src: ../assets/
+        dest: /
+- name: Deploy traefik stack
+  hosts: managers
+  become: true
+  tasks:
+    - name: Populate traefik-prometheus-grafana compose file and copy to manager
+      template:
+        src: ../assets/stack-traefik-main.yaml
+        dest: /stack-traefik-main.yaml
+    - name: Deploy traefik stack
+      command: sudo docker stack deploy -c /stack-traefik-main.yaml traefik
