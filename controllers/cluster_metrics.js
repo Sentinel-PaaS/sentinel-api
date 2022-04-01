@@ -24,7 +24,7 @@ nodes = nodes.data.map(node => {
 
 let metrics = [];
 
-let data = await AXIOS.get(`http://prometheus-2.michaelfatigati.com/api/v1/query`, {
+let data = await AXIOS.get(`http://${managerIP}:9090/api/v1/query`, {
   params: {
     query: "node_filesystem_avail_bytes"
   },
@@ -39,7 +39,7 @@ let diskBytesFree = data.data.data.result.map(record => {
 });
 metrics = diskBytesFree;
 
-data = await AXIOS.get(`http://prometheus-2.michaelfatigati.com/api/v1/query`, {
+data = await AXIOS.get(`http://${managerIP}:9090/api/v1/query`, {
   params: {
     query: "node_filesystem_size_bytes"
   },
@@ -60,7 +60,7 @@ metrics.map(record1 => {
   })
 })
 
-data = await AXIOS.get(`http://prometheus-2.michaelfatigati.com/api/v1/query`, {
+data = await AXIOS.get(`http://${managerIP}:9090/api/v1/query`, {
   params: {
     // query: "sum(rate(node_cpu{mode!=\"idle\",mode!=\"iowait\",mode!~\"^(?:guest.*)$\"}[5m])) BY (instance)"
     query: "sum by (instance) (irate(node_cpu_seconds_total{mode!=\"idle\",mode!=\"iowait\"}[10m]) * 100)"
@@ -83,7 +83,7 @@ metrics.map(record1 => {
 
 // could calculate the percentage memory free in one query with `100 - (100 * node_memory_MemFree_bytes / node_memory_MemTotal_bytes)`
 
-data = await AXIOS.get(`http://prometheus-2.michaelfatigati.com/api/v1/query`, {
+data = await AXIOS.get(`http://${managerIP}:9090/api/v1/query`, {
   params: {
     query: "node_memory_MemTotal_bytes"
   },
@@ -103,7 +103,7 @@ metrics.map(record1 => {
   })
 })
 
-data = await AXIOS.get(`http://prometheus-2.michaelfatigati.com/api/v1/query`, {
+data = await AXIOS.get(`http://${managerIP}:9090/api/v1/query`, {
   params: {
     query: "node_memory_MemFree_bytes"
   },
