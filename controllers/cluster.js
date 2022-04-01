@@ -4,12 +4,11 @@ const Ansible = require("node-ansible");
 const Docker = require('dockerode');
 const util = require('util');
 const exec = util.promisify(require("child_process").exec);
-const { spawn } = require("child_process");
 const fs = require("fs");
 const ini = require("ini");
 const AXIOS = require('axios');
 const HTTPS = require('https');
-const {getClusterMetrics} = require('./cluster_metrics');
+const { getClusterMetrics } = require('./cluster_metrics');
 const bcryptjs = require("bcryptjs");
 
 function getWorkerCount() {
@@ -60,25 +59,6 @@ async function applyTerraform(req, res, next) {
   } catch (error) {
     console.error(error);
   }
-}
-
-// Complete configuration (install docker, initialize swarm, launch Traefik)
-function runAnsiblePlaybook(req, res, next, playbookName, successMessage) {
-  let playbook = new Ansible.Playbook().playbook('ansible/' + playbookName);
-  playbook.inventory('ansible/inventory/hosts');
-  playbook.forks(1);
-  playbook.on('stdout', function(data) { console.log(data.toString()); });
-  playbook.on('stderr', function(data) { console.log(data.toString()); });
-  playbook.exec().then((successResult) => {
-    console.log("success code: ", successResult.code); // Exit code of the executed command
-    console.log("success output: ", successResult.output); // Standard output/error of the executed command
-    res.status(200).send(successMessage);
-    return 1;
-  }).catch((error) => {
-    console.error(error);
-    res.status(500).send(`error: ${error}`);
-    return 0;
-  });
 }
 
 async function scaleUp(req, res, next) {
@@ -202,7 +182,21 @@ module.exports = {
       console.error(error);
     }
     await new Promise(r => setTimeout(r, 10000)); // Sleep for 10 seconds to ensure the infrastructure is up
-    runAnsiblePlaybook(req, res, next, "playbook", "Sentinel init complete.");
+    let playbook = new Ansible.Playbook().playbook('ansible/setup_manager');
+    playbook.inventory('ansible/inventory/hosts');
+    playbook.forks(1);
+    playbook.on('stdout', function(data) { console.log(data.toString()); });
+    playbook.on('stderr', function(data) { console.log(data.toString()); });
+    playbook.exec().then((successResult) => {
+      console.log("success code: ", successResult.code); // Exit code of the executed command
+      console.log("success output: ", successResult.output); // Standard output/error of the executed command
+      res.status(200).send("Sentinel init complete.");
+      return 1;
+    }).catch((error) => {
+      console.error(error);
+      res.status(500).send(`error: ${error}`);
+      return 0;
+    });
   },
 
   async scale(req, res, next) {
@@ -340,7 +334,7 @@ module.exports = {
       let escapedHash = hashed.replace(/\$/g, "$$$$");
       //  escapedHash = escapedHash.replace(/\$\$/, "$")
       console.log(escapedHash);
-    
+
       let playbook = new Ansible.Playbook().playbook('ansible/update_monitor_domains').variables({
         traefikHostName,
         prometheusHostName,
