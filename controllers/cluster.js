@@ -312,10 +312,6 @@ module.exports = {
   },
 
   async inspectNodes(req, res, next) {
-    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
-      res.status(404).send("Manager node does not exist.");
-    }
-
     const managerIP = getManagerIP();
 
     try {

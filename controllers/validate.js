@@ -23,9 +23,6 @@ function createDockerAPIConnection() {
 module.exports = {
   async validateProductionAppExists(req, res, next) {
     const appName = req.params.appName;
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      res.status(404).send("Manager node does not exist.");
-    }
 
     const manager1 = createDockerAPIConnection();
     let services = await manager1.listServices();
@@ -43,10 +40,6 @@ module.exports = {
   async validateCanaryAppExists(req, res, next) {
     const appName = req.params.appName;
 
-    if (fs.existsSync('../ansible/inventory/hosts')) {
-      res.status(404).send("Manager node does not exist.");
-    }
-
     const manager1 = createDockerAPIConnection();
     let services = await manager1.listServices();
     services = services.filter(record => {
@@ -59,6 +52,13 @@ module.exports = {
       res.status(404).send("Canary does not exist for this application.");
     } else {
       next();
+    }
+  },
+  async validateManagerExists(req, res, next) {
+    if (!fs.existsSync('./ansible/inventory/hosts')) {
+      res.status(404).send("Manager node does not exist.");
+    } else {
+      next()
     }
   }
 }

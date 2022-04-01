@@ -29,9 +29,6 @@ function createDockerAPIConnection() {
 module.exports = {
   // https://docs.docker.com/engine/api/v1.37/#operation/ServiceLogs
   getServiceLogs(req, res, next) {
-    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
-      res.status(404).send("Manager node does not exist.");
-    }
     const managerIP = getManagerIP();
 
     let serviceID = req.params.id;
@@ -44,9 +41,6 @@ module.exports = {
   },
 
   listServices(req, res, next) {
-    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
-      res.status(404).send("Manager node does not exist.");
-    }
     const managerIP = getManagerIP();
 
     let result = AXIOS.get(`http://${managerIP}:2375/services`);
@@ -65,9 +59,6 @@ module.exports = {
   },
 
   async inspectService(req, res, next) {
-    if (!fs.existsSync('./ansible/inventory/hosts')) { // if hosts file does not exist respond with 404
-      res.status(404).send("Manager node does not exist.");
-    }
     const managerIP = getManagerIP();
 
     let serviceName = req.params.appName;
@@ -174,7 +165,6 @@ module.exports = {
 
 
   async upload(req, res, next) {
-    console.log(req)
     if (!req.files) {
       res.status(400).send('No file uploaded')
     } else {
