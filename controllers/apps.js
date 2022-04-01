@@ -36,7 +36,7 @@ module.exports = {
     result.then(success => {
       res.send(success.data);
     }).catch(err => {
-      console.log(err);
+      console.error(err);
     });
   },
 
@@ -54,7 +54,7 @@ module.exports = {
       });
       res.send(result);
     }).catch(err => {
-      console.log(err);
+      console.error(err);
     });
   },
 
@@ -100,7 +100,7 @@ module.exports = {
       let result = services;
       res.send(result);
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   },
 
@@ -163,19 +163,17 @@ module.exports = {
     });
   },
 
-
   async upload(req, res, next) {
     if (!req.files) {
-      res.status(400).send('No file uploaded')
+      res.status(400).send('No file uploaded');
     } else {
-      let dbFile = req.files.app_db
+      let dbFile = req.files.app_db;
 
-      dbFile.mv(__dirname + '/../assets/sql/' + req.params.appName + '_db.sql')
-      res.status(200).send('File Uploaded')
+      dbFile.mv(__dirname + '/../assets/sql/' + req.params.appName + '_db.sql');
+      res.status(200).send('File Uploaded');
     }
   },
 
-  
   async deploy(req, res, next) {
     const appName = req.body.appName;
     const productionImagePath = req.body.productionImagePath;
@@ -221,8 +219,7 @@ module.exports = {
     }
     playbook.inventory('ansible/inventory/hosts');
 
-    let promise = playbook.exec();
-    promise.then((successResult) => {
+    await playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
       console.log("success output: ", successResult.output); // Standard output/error of the executed command
       res.status(200).send("App deployed.");
@@ -288,7 +285,7 @@ module.exports = {
       appName,
     });
     playbook.inventory('ansible/inventory/hosts');    //
-    playbook.exec().then((successResult) => {
+    await playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
       console.log("success output: ", successResult.output); // Standard output/error of the executed command
       res.status(200).send("Rollback complete.");
@@ -305,7 +302,7 @@ module.exports = {
     });
     playbook.inventory('ansible/inventory/hosts');
 
-    playbook.exec().then((successResult) => {
+    await playbook.exec().then((successResult) => {
       console.log("success code: ", successResult.code); // Exit code of the executed command
       console.log("success output: ", successResult.output); // Standard output/error of the executed command
       res.status(200).send("App deleted.");
@@ -332,7 +329,6 @@ module.exports = {
       console.error(error);
       res.status(500).send("Something went wrong.");
     });
-
   },
 
 };
