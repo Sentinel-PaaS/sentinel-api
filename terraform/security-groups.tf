@@ -127,7 +127,10 @@ resource "aws_security_group" "tf_sgswarm" {
 
 # HTTP/HTTPS
 resource "aws_security_group" "tf_allow_http" {
-  name        = "tf_allow_http"
+  name = "tf_allow_http"
+  tags = {
+    Name = "tf_allow_http"
+  }
   description = "Allow HTTP/HTTPS inbound traffic"
 
   ingress {
@@ -172,12 +175,18 @@ resource "aws_security_group" "tf_express" {
 }
 
 # Docker API Port for Dockerode
-resource "aws_security_group" "tf_docker_api" {
-  name = "tf_docker_api"
+resource "aws_security_group" "tf_docker_prometheus_api" {
+  name = "tf_docker_prometheus_api"
   tags = {
-    Name = "tf_docker_api"
+    Name = "tf_docker_prometheus_api"
   }
 
+  ingress {
+    from_port = 9090
+    to_port = 9090
+    protocol = "tcp"
+    cidr_blocks = ["${chomp(data.http.myip.body)}/32"]
+  }
   ingress {
     from_port   = 2375
     to_port     = 2375
