@@ -42,64 +42,23 @@ function createDockerAPIConnection() {
 // Initialize Terraform
 async function initializeTerraform(req, res, next) {
   try {
-    const { stdout, stderr } = await exec("sudo terraform -chdir=./terraform init -input=false");
+    const { stdout, stderr } = await exec("terraform -chdir=./terraform init -input=false");
     console.log('stdout: ', stdout);
     console.error('stderr: ', stderr);
   } catch (error) {
     console.error(error);
-    // res.status(500).send({ error });
-    // return 0;
   }
-
-  // const terraformInit = spawn("sudo", ["terraform", "-chdir=./terraform", "init", "-input=false"]);
-  // terraformInit.stdout.on("data", data => {
-  //   console.log(`stdout: ${data}`);
-  // });
-
-  // terraformInit.stderr.on("data", data => {
-  //   console.log(`stderr: ${data}`);
-  // });
-
-  // terraformInit.on('error', (error) => {
-  //   console.log(`error: ${error.message}`);
-  //   res.status(500).send(`error: ${error}`);
-  // });
-
-  // terraformInit.on("close", code => {
-  //   console.log(`child process exited with code ${code}`);
-  //   applyTerraform(req, res, next);
-  // });
 }
 
 // Launch initial infrastructure
 async function applyTerraform(req, res, next) {
   try {
-    const { stdout, stderr } = await exec("sudo terraform -chdir=./terraform apply -input=false -auto-approve");
+    const { stdout, stderr } = await exec("terraform -chdir=./terraform apply -input=false -auto-approve");
     console.log('stdout: ', stdout);
     console.error('stderr: ', stderr);
   } catch (error) {
     console.error(error);
-    // res.status(500).send({ error });
-    // return 0;
   }
-  // const terraformApply = spawn("sudo", ["terraform", "-chdir=./terraform", "apply", "-input=false", "-auto-approve"]);
-  // terraformApply.stdout.on("data", data => {
-  //   console.log(`stdout: ${data}`);
-  // });
-
-  // terraformApply.stderr.on("data", data => {
-  //   console.log(`stderr: ${data}`);
-  // });
-
-  // terraformApply.on('error', (error) => {
-  //   console.log(`error: ${error.message}`);
-  //   res.status(500).send(`error: ${error}`);
-  // });
-
-  // terraformApply.on("close", code => {
-  //   console.log(`child process exited with code ${code}`);
-  //   runAnsiblePlaybook(req, res, next);
-  // });
 }
 
 // Complete configuration (install docker, initialize swarm, launch Traefik)
@@ -121,7 +80,7 @@ function runAnsiblePlaybook(req, res, next, playbookName, successMessage) {
   });
 }
 
-function scaleUp(req, res, next) {
+async function scaleUp(req, res, next) {
   // Read the number of workers already existing and add one
   let workerNumber = getWorkerCount() + 1;
 
@@ -161,6 +120,16 @@ output "worker${workerNumber}_private_ip" {
 `;
 
   fs.writeFileSync(`terraform/worker${workerNumber}.tf`, workerContent);
+  try {
+    const { chownStdout, chownStderr } = await exec(`chown $USER ./terraform/worker${workerNumber}.tf`);
+    console.log('stdout: ownership changed, ', chownStdout);
+    console.error('stderr: ', chownStderr);
+    const { chmodStdout, chmodStderr } = await exec(`chmod 700 ./terraform/worker${workerNumber}.tf`);
+    console.log('stdout: permissions changed, ', chmodStdout);
+    console.error('stderr: ', chmodStderr);
+  } catch (error) {
+    console.error(error);
+  }
 
   let outputContent = `resource "local_file" "hosts" {
   content  = <<-DOC
@@ -181,14 +150,20 @@ output "worker${workerNumber}_private_ip" {
   fs.writeFileSync(`terraform/output.tf`, outputContent);
 }
 
-function scaleDown(req, res, next) {
+async function scaleDown(req, res, next) {
   let workerNumber = getWorkerCount();
   if (workerNumber < 1) {
     res.status(400).send("You are down to one instance. If you want zero instances, please use the destroy command.");
     return 0;
   }
 
-  fs.unlinkSync(`terraform/worker${workerNumber}.tf`);
+  try {
+    const { rmTfStdout, rmTfStderr } = await exec(`rm -f terraform/worker${workerNumber}.tf`);
+    console.log(`worker${workerNumber}.tf terraform file removed, `, rmTfStdout);
+    console.error('stderr: ', rmTfStderr);
+  } catch (error) {
+    console.error(error);
+  }
   workerNumber--;
 
   let outputContent = `resource "local_file" "hosts" {
@@ -216,36 +191,37 @@ module.exports = {
     await initializeTerraform(req, res, next);
     await applyTerraform(req, res, next);
     try {
-      const { chownStdout, chownStderr } = await exec("sudo chown $USER ./keys/managerKey.pem");
+      const { chownStdout, chownStderr } = await exec("chown $USER ./keys/managerKey.pem");
       console.log('stdout: ownership changed, ', chownStdout);
       console.error('stderr: ', chownStderr);
-      const { chmodStdout, chmodStderr } = await exec("sudo chmod 700 ./keys/managerKey.pem");
+      const { chmodStdout, chmodStderr } = await exec("chmod 700 ./keys/managerKey.pem");
       console.log('stdout: permissions changed, ', chmodStdout);
       console.error('stderr: ', chmodStderr);
     } catch (error) {
       console.error(error);
-      // res.status(500).send({ error });
-      // return 0;
     }
     await new Promise(r => setTimeout(r, 10000)); // Sleep for 10 seconds to ensure the infrastructure is up
     runAnsiblePlaybook(req, res, next, "playbook", "Sentinel init complete.");
   },
 
   async scale(req, res, next) {
-    req.body.scaleCluster === 'up' ? scaleUp(req, res, next) : scaleDown(req, res, next);
+    if (req.body.scaleCluster === 'up') {
+      await scaleUp(req, res, next);
+    } else {
+      await scaleDown(req, res, next);
+    }
 
     await applyTerraform(req, res, next);
     if (req.body.scaleCluster === 'up') {
       try {
-        const { chownStdout, chownStderr } = await exec(`sudo chown $USER ./keys/workerKey${getWorkerCount()}.pem`);
+        const { chownStdout, chownStderr } = await exec(`chown $USER ./keys/workerKey${getWorkerCount()}.pem`);
         console.log('stdout: ownership changed, ', chownStdout);
         console.error('stderr: ', chownStderr);
-        const { chmodStdout, chmodStderr } = await exec(`sudo chmod 700 ./keys/workerKey${getWorkerCount()}.pem`);
+        const { chmodStdout, chmodStderr } = await exec(`chmod 700 ./keys/workerKey${getWorkerCount()}.pem`);
         console.log('stdout: permissions changed, ', chmodStdout);
         console.error('stderr: ', chmodStderr);
       } catch (error) {
-        // res.status(500).send({ error });
-        return 0;
+        console.error(error);
       }
       let manager = createDockerAPIConnection();
       let swarmInfo = await manager.swarmInspect();
@@ -275,7 +251,13 @@ module.exports = {
       });
     } else {
       let workerNumber = getWorkerCount() + 1;
-      fs.unlinkSync(`./keys/workerKey${workerNumber}.pem`);
+      try {
+        const { rmKeyStdout, rmKeyStderr } = await exec(`rm -f ./keys/workerKey${workerNumber}.pem`);
+        console.log(`workerKey${workerNumber}.pem key removed `, rmKeyStdout);
+        console.error('stderr: ', rmKeyStderr);
+      } catch (error) {
+        console.error(error);
+      }
       res.status(200).send("Scale down complete.");
     }
   },
@@ -283,32 +265,33 @@ module.exports = {
   async destroy(req, res, next) {
     let workerNumber = getWorkerCount();
 
-    const terraformDestroy = spawn("terraform", ["-chdir=./terraform", "destroy", "-auto-approve"]);
-    terraformDestroy.stdout.on("data", data => {
-      console.log(`stdout: ${data}`);
-    });
+    try {
+      const { stdout, stderr } = await exec("terraform -chdir=./terraform destroy -auto-approve");
+      console.log('stdout: ', stdout);
+      console.error('stderr: ', stderr);
+    } catch (error) {
+      console.error(error);
+    }
 
-    terraformDestroy.stderr.on("data", data => {
-      console.log(`stderr: ${data}`);
-    });
-
-    terraformDestroy.on('error', (error) => {
-      console.log(`error: ${error.message}`);
-      // res.status(500).send("Destroy failed.");
-      // return 0;
-    });
-
-    terraformDestroy.on("close", code => {
-      console.log(`child process exited with code ${code}`);
-      res.status(200).send("Destroy complete.");
-      // return 1;
-    });
-
-    // delete manager key (all keys)
-    fs.unlinkSync(`./keys/managerKey.pem`);
+    // delete all keys
+    try {
+      const { rmStdout, rmStderr } = await exec("rm -f ./keys/managerKey.pem");
+      console.log('managerKey.pem key removed ', rmStdout);
+      console.error('stderr: ', rmStderr);
+    } catch (error) {
+      console.error(error);
+    }
     for (let x = 1; x <= workerNumber; x++) {
-      fs.unlinkSync(`./keys/workerKey${x}.pem`);
-      fs.unlinkSync(`terraform/worker${x}.tf`);
+      try {
+        const { rmKeyStdout, rmKeyStderr } = await exec(`rm -f ./keys/workerKey${x}.pem`);
+        console.log(`workerKey${x}.pem key removed `, rmKeyStdout);
+        console.error('stderr: ', rmKeyStderr);
+        const { rmTfStdout, rmTfStderr } = await exec(`rm -f terraform/worker${x}.tf`);
+        console.log(`worker${x}.tf terraform file removed `, rmTfStdout);
+        console.error('stderr: ', rmTfStderr);
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     let outputContent = `resource "local_file" "hosts" {
@@ -324,6 +307,7 @@ module.exports = {
 }`;
 
     fs.writeFileSync(`terraform/output.tf`, outputContent);
+    res.status(200).send("Destroy complete.");
   },
 
   async inspectNodes(req, res, next) {
