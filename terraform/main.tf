@@ -24,7 +24,7 @@ resource "aws_instance" "manager1" {
   ami                    = var.ami
   instance_type          = var.instance_type
   key_name               = "managerKey"
-  vpc_security_group_ids = ["${aws_security_group.tf_sgswarm.id}", "${aws_security_group.tf_allow_http.id}", "${aws_security_group.tf_ssh.id}", "${aws_security_group.tf_traefik_dashboard.id}", "${aws_security_group.tf_docker_api.id}"]
+  vpc_security_group_ids = ["${aws_security_group.tf_sgswarm.id}", "${aws_security_group.tf_allow_http.id}", "${aws_security_group.tf_ssh.id}", "${aws_security_group.tf_traefik_dashboard.id}", "${aws_security_group.tf_docker_prometheus_api.id}"]
   tags = {
     Name = "tf manager 1"
   }
