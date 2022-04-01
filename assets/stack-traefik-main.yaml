@@ -35,7 +35,7 @@ services:
         - traefik.http.routers.traefik.tls.certresolver=myresolver
         - traefik.http.services.traefik.loadbalancer.server.port=8080
         # - traefik.http.middlewares.monitor-auth.basicauth.usersfile=/users/users
-        - traefik.http.middlewares.monitor-auth.basicauth.users=admin:{{ escapedHash }}
+        - traefik.http.middlewares.monitor-auth.basicauth.users=admin:{{ escapedHash|default("password", true) }}
         - traefik.http.routers.traefik.middlewares=monitor-auth
 
         # - traefik.http.routers.t.middlewares=authtraefik
@@ -79,7 +79,7 @@ services:
       - traefik.http.routers.prometheus.tls.certresolver=myresolver
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
       - traefik.docker.network=traefik-public
-      - traefik.http.middlewares.monitor-auth.basicauth.users=admin:{{ escapedHash }}
+      - traefik.http.middlewares.monitor-auth.basicauth.users=admin:{{ escapedHash|default("password", true) }}
       - traefik.http.routers.prometheus.middlewares=monitor-auth 
       placement:
         constraints:
@@ -142,7 +142,7 @@ services:
         - traefik.http.routers.grafana.tls.certresolver=myresolver
         - traefik.http.services.grafana.loadbalancer.server.port=3000
         - traefik.docker.network=traefik-public
-        - traefik.http.middlewares.monitor-auth.basicauth.users=admin:{{ escapedHash }}
+        - traefik.http.middlewares.monitor-auth.basicauth.users=admin:{{ escapedHash|default("password", true) }}
         - traefik.http.routers.grafana.middlewares=monitor-auth
       placement:
         constraints:
