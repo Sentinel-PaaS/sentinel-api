@@ -18,7 +18,7 @@ router.get('/apps/:appName', appsController.inspectService);
 router.get('/cluster', clusterController.inspectNodes);
 
 // Inspect the status of a particular service
-router.get('/apps/:id/logs', appsController.getServiceLogs);
+router.get('/apps/:appName/logs', appsController.getServiceLogs);
 
 // Deploy a new app (if sql file provided, it will be uploaded first)
 router.post('/apps', appsController.deploy);
