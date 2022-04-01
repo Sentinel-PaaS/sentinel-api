@@ -17,7 +17,7 @@
         dest: /{{ appName }}_canary.yml
     - name: Transfer new production template in case of rollback
       template:
-        src: ../assets/template_production_with_db.yml
+        src: ../assets/template_production_db.yml
         dest: /{{ appName }}_production.yml
 - name: Deploy application 
   hosts: managers
