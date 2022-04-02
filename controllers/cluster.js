@@ -385,5 +385,14 @@ module.exports = {
         return 0;
       });
     });
+  },
+
+  async getManagerIP(req, res, next) {
+    try {
+      const managerIP = getManagerIP();
+      res.json({managerIP});
+    } catch (err) {
+      res.status(500).send(`error: ${err}`);
+    }
   }
 };
