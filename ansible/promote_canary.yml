@@ -1,4 +1,10 @@
 ---
+- name: Relaunch production stack to remove traffic splitting labels and remove canary service
+  hosts: managers
+  become: true
+  tasks:
+    - name: Run docker stack deploy
+      command: docker stack deploy -c /{{ appName }}_production.yml "{{ appName }}"
 - name: Promote Canary
   hosts: managers
   become: true
@@ -10,7 +16,7 @@
   become: true
   tasks:
     - name: Remove canary service
-      command: sudo docker service rm {{ appName }}_canary
+      command: docker service rm {{ appName }}_canary
 - name: Remove dynamic config file
   hosts: managers
   become: true
