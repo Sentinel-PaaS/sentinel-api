@@ -12,9 +12,9 @@ const { validateProductionAppExists, validateCanaryAppExists, validateManagerExi
 router.get('/apps', validateManagerExists, appsController.listServices);
 
 // Inspect the status of a particular service
-router.get('/apps/:appName', validateManagerExists, appsController.inspectService);
+router.get('/apps/:appName', validateManagerExists, validateProductionAppExists, appsController.inspectService);
 
-// Inspect the status of a particular service
+// Inspect the status of cluster nodes 
 router.get('/cluster', validateManagerExists, clusterController.inspectNodes);
 
 // Inspect the logs of a particular service
@@ -50,8 +50,9 @@ router.post('/cluster/initialize', clusterController.init);
 router.put('/cluster/scale', validateManagerExists, clusterController.scale);
 
 // Delete cluster
-router.delete('/destroy', validateManagerExists, clusterController.destroy);
+router.delete('/destroy', clusterController.destroy);
 
+// Set dashboard domains and password
 router.post('/cluster/monitor/domains', validateManagerExists, clusterController.setDomains);
 
 module.exports = router;
