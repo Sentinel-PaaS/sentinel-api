@@ -49,10 +49,20 @@
       copy:
         src: ../assets/
         dest: /
+    - name: Restrict access to TLS cert document (transferred over in prior command)
+      command: chmod 600 /letsencrypt/acme.json
 - name: Deploy traefik stack
   hosts: managers
   become: true
   tasks:
+    - name: Populate traefik static config with userEmail
+      template:
+        src: ../assets/traefik.yaml
+        dest: /traefik.yaml
+    - name: Populate grafana static config with default email
+      template:
+        src: ../assets/grafana/provisioning/datasources/datasource.yml
+        dest: /grafana/provisioning/datasources/datasource.yml
     - name: Populate traefik-prometheus-grafana compose file and copy to manager
       template:
         src: ../assets/stack-traefik-main.yaml

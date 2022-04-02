@@ -3,7 +3,7 @@
 version: "3.7"
 
 services:
-  cat-production:
+  production:
     image: dsessler7/catnip:production
     networks:
       - traefik-public
@@ -28,7 +28,7 @@ services:
         # Canary approach
         - traefik.http.routers.app_router.service=canary@file
         - traefik.http.services.production_svc.loadbalancer.server.port=5000
-  cat-canary:
+  canary:
     image: dsessler7/catnip:canary2
     networks:
       - traefik-public

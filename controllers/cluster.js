@@ -168,6 +168,11 @@ async function scaleDown(req, res, next) {
 
 module.exports = {
   async init(req, res, next) {
+    if (!req.body.userEmail) {
+      let err = new Error("Email required to configure HTTPS.");
+      console.log(err);
+      return next(err);
+    }
     // Start initialization process
     await initializeTerraform(req, res, next);
     await applyTerraform(req, res, next);
@@ -181,8 +186,12 @@ module.exports = {
     } catch (error) {
       console.error(error);
     }
+
+    let userEmail = req.body.userEmail;
     await new Promise(r => setTimeout(r, 10000)); // Sleep for 10 seconds to ensure the infrastructure is up
-    let playbook = new Ansible.Playbook().playbook('ansible/setup_manager');
+    let playbook = new Ansible.Playbook().playbook('ansible/setup_manager').variables({
+      userEmail
+    });
     playbook.inventory('ansible/inventory/hosts');
     playbook.forks(1);
     playbook.on('stdout', function(data) { console.log(data.toString()); });
@@ -348,9 +357,8 @@ module.exports = {
       playbook.exec().then((successResult) => {
         console.log("success code: ", successResult.code); // Exit code of the executed command
         console.log("success output: ", successResult.output); // Standard output/error of the executed command
-        res.status(200).send(`Domains successfully updated.
-As a reminder, you will need to have all these hostnames pointing to the following IP address: ${managerIP}
-        `);
+        res.status(200).send(`Domains successfully updated. As a reminder, you will use the username "admin" with the password you provided, and you will need to have all your provided hostnames pointing to the following IP address: ${managerIP}.`
+        );
         return 1;
       }).catch((error) => {
         console.error(error);
