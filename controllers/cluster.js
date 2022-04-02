@@ -187,7 +187,7 @@ async function scaleDown(req, res, next) {
 
 module.exports = {
   async init(req, res, next) {
-    if (!req.body.userEmail) {
+    if (!req.body.email) {
       let err = new Error("Email required to configure HTTPS.");
       console.log(err);
       return next(err);
