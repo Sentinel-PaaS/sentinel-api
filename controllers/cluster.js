@@ -138,6 +138,25 @@ async function scaleDown(req, res, next) {
     return 0;
   }
 
+  // get ip address of worker that will be removed
+  const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
+  let workerIP = Object.keys(hosts.workers)[workerNumber - 1].split(' ')[0];
+
+  // remove worker node from swarm
+  let playbook = new Ansible.Playbook().playbook('ansible/leave_swarm').variables({
+    workerIP,
+  });
+  playbook.inventory('ansible/inventory/hosts');
+  playbook.forks(1);
+  playbook.on('stdout', function(data) { console.log(data.toString()); });
+  playbook.on('stderr', function(data) { console.log(data.toString()); });
+  await playbook.exec().then((successResult) => {
+    console.log("success code: ", successResult.code); // Exit code of the executed command
+    console.log("success output: ", successResult.output); // Standard output/error of the executed command
+  }).catch((error) => {
+    console.error(error);
+  });
+
   try {
     const { rmTfStdout, rmTfStderr } = await exec(`rm -f terraform/worker${workerNumber}.tf`);
     console.log(`worker${workerNumber}.tf terraform file removed, `, rmTfStdout);

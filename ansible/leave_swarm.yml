@@ -1,0 +1,7 @@
+---
+- name: Remove worker node from swarm
+  hosts: "{{ workerIP }}"
+  become: true
+  tasks:
+    - name: Run swarm leave command
+      command: docker swarm leave
