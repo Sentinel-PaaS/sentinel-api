@@ -121,39 +121,41 @@ module.exports = {
 
       let result = services;
 
-      let anyNotRunning = false;
-      result.forEach(service => {
-        service.servicesTasks.forEach(task => {
-          if (task.taskStatus !== "running") {
-            anyNotRunning = true;
-          }
-        })
-      });
+      // let anyNotRunning = false;
+      // result.forEach(service => {
+      //   service.servicesTasks.forEach(task => {
+      //     if (task.taskStatus !== "running") {
+      //       anyNotRunning = true;
+      //     }
+      //   })
+      // });
 
-      let message = "";
-      if (result.length > 1) {
-        if (anyNotRunning) {
-          message = `This service has a canary version, and there may be a problem with either an instance of the canary version, or the production version. See "taskStatus" details below.
+      let message = "For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.";
+      let hasCanary = result.length > 1 ? true : false;
+//       if (result.length > 1) {
+//         if (anyNotRunning) {
+//           message = `This service has a canary version, and there may be a problem with either an instance of the canary version, or the production version. See "taskStatus" details below.
 
-For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
-        } else {
-          message = `This service has a canary version, and all instances of canary and production appear to be running. See "taskStatus" details below.
+// For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
+//         } else {
+//           message = `This service has a canary version, and all instances of canary and production appear to be running. See "taskStatus" details below.
 
-For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
-        }
-      } else {
-        if (anyNotRunning) {
-          message = `This service has no canary version, but there may be a problem with the production version. See "taskStatus" details below.
+// For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
+//         }
+//       } else {
+//         if (anyNotRunning) {
+//           message = `This service has no canary version, but there may be a problem with the production version. See "taskStatus" details below.
 
-For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS.. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
-        } else {
-          message = `This service has no canary version, and all instances appear to be running. See "taskStatus" details below.
+// For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS.. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
+//         } else {
+//           message = `This service has no canary version, and all instances appear to be running. See "taskStatus" details below.
 
-For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
-        }
-      }
+// For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
+//         }
+//       }
 
       let response = {
+        hasCanary,
         message,
         data: result
       };
