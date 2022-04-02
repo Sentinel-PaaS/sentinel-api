@@ -20,6 +20,9 @@ router.get('/cluster', validateManagerExists, clusterController.inspectNodes);
 // Inspect the logs of a particular service
 router.get('/apps/:appName/logs', validateManagerExists, appsController.getServiceLogs);
 
+// get manager IP
+router.get('/cluster/managerIP', validateManagerExists, clusterController.getManagerIP);
+
 // Deploy a new app (if sql file provided, it will be uploaded first)
 router.post('/apps', validateManagerExists, appsController.deploy);
 router.post('/apps/:appName/upload', validateManagerExists, appsController.upload)
