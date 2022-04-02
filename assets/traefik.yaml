@@ -52,8 +52,8 @@ metrics:
 certificatesResolvers:
   myresolver:
     acme:
-      email: fatigati.michael@gmail.com
-      storage: /assets/letsencrypt/acme.json
+      email: {{ userEmail|default("example@email.com", true) }}
+      storage: assets/letsencrypt/acme.json
       tlsChallenge: {}
       caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
 
