@@ -55,7 +55,7 @@ certificatesResolvers:
       email: {{ userEmail|default("example@email.com", true) }}
       storage: assets/letsencrypt/acme.json
       tlsChallenge: {}
-      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+      # caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
 
 api:
   insecure: true
