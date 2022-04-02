@@ -206,7 +206,7 @@ module.exports = {
       console.error(error);
     }
 
-    let userEmail = req.body.userEmail;
+    let userEmail = req.body.email;
     await new Promise(r => setTimeout(r, 10000)); // Sleep for 10 seconds to ensure the infrastructure is up
     let playbook = new Ansible.Playbook().playbook('ansible/setup_manager').variables({
       userEmail
