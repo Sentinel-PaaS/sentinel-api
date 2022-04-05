@@ -3,13 +3,15 @@
   hosts: managers
   become: true
   tasks:
-    - name: Copy assets directory to manager nodes
-      copy:
-        src: ../assets/
-        dest: /
-    - name: Populate traefik-prometheus-grafana compose file and copy to manager
+    - name: Populate grafana's datasource.yml with new domain and copy to manager
+      template:
+        src: ../assets/grafana/provisioning/datasources/datasource.yml
+        dest: /grafana/provisioning/datasources/datasource.yml
+    - name: Populate traefik-prometheus-grafana.yml compose file and copy to manager
       template:
         src: ../assets/stack-traefik-main.yaml
         dest: /stack-traefik-main.yaml
-    - name: Update traefik stack
+    - name: Stop grafana service so when it is restarted, it registers new domain in datasource.yml
+      command: sudo docker service rm traefik_grafana
+    - name: Update traefik stack with new dynamic configs
       command: sudo docker stack deploy -c /stack-traefik-main.yaml traefik
