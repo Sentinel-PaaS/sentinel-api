@@ -176,6 +176,11 @@ For more information on app performance, visit the prometheus and grafana dashbo
     const dbName = req.body.dbName;
     const dbHost = req.body.dbHost;
 
+    const manager = createDockerAPIConnection();
+    const productionService = manager.getService(`${appName}_production`);
+    const productionServiceInspected = await productionService.inspect();
+    const scaleNumber = parseInt(productionServiceInspected.Spec.Mode.Replicated.Replicas, 10);
+
     let playbook;
     if (appHasDatabase) {
       playbook = new Ansible.Playbook().playbook('ansible/deploy_canary_with_db').variables({
@@ -190,7 +195,8 @@ For more information on app performance, visit the prometheus and grafana dashbo
         dbUsername,
         dbPassword,
         dbName,
-        dbHost
+        dbHost,
+        scaleNumber,
       });
     } else {
       playbook = new Ansible.Playbook().playbook('ansible/deploy_canary_no_db').variables({
@@ -202,6 +208,7 @@ For more information on app performance, visit the prometheus and grafana dashbo
         canaryPort,
         canaryWeight,
         productionWeight,
+        scaleNumber,
       });
     }
     playbook.inventory('ansible/inventory/hosts');

@@ -5,3 +5,7 @@
   tasks:
     - name: Run docker service scale command
       command: sudo docker service scale {{ appName }}_production={{ scaleNumber }}
+    - name: Transfer new production template
+      template:
+        src: ../assets/template_{{ appName }}_production_set_scale.yml
+        dest: /{{ appName }}_production.yml

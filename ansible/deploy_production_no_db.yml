@@ -1,9 +1,16 @@
 ---
-  - name: Transfer a template to the manager
+  - name: Create template for changing scale
+    hosts: localhost
+    connection: local
+    tasks:
+      - name: Create template
+        template: src=../assets/template_production_no_db_scale.yml dest=../assets/template_{{ appName }}_production_set_scale.yml
+        delegate_to: localhost
+  - name: Transfer templates to the manager
     hosts: managers
     become: true
     tasks:
-      - name: Populate template and transfer to manager
+      - name: Populate production template and transfer to manager
         template:
           src: ../assets/template_production_no_db.yml
           dest: /{{ appName }}_production.yml

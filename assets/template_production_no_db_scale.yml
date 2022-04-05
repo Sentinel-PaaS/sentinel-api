@@ -1,22 +1,14 @@
 ---
 version: "3.7"
+
 services:
   production:
     image: {{ productionImagePath }}
     networks:
       - traefik-public
-      - {{appName}}-network
-    depends_on:
-      - {{dbHost}}
-    environment:
-      - POSTGRES_USER={{dbUsername}}
-      - POSTGRES_PASSWORD={{dbPassword}}
-      - POSTGRES_DB={{dbName}}
-      - DB_PORT=5432
-      - POSTGRES_HOST={{dbHost}}
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: {{ '{{ scaleNumber }}' }}
       update_config:
         failure_action: rollback
         parallelism: 1
@@ -34,14 +26,10 @@ services:
         - traefik.http.routers.{{ appName }}_production_rtr.tls.certresolver=myresolver
         # the port listed here MUST be the internal post listed in the image
         - traefik.http.services.{{ appName }}_production_svc.loadbalancer.server.port={{ productionPort }}
+
 networks:
   traefik-public:
     driver: overlay
     attachable: true
     name: traefik-public
     external: true
-  {{appName}}-network:
-    driver: overlay
-    attachable: true
-    name: {{appName}}-network
-    external: false

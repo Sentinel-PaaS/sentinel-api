@@ -1,4 +1,14 @@
 ---
+- name: Create templates for changing scale
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create production scale template
+      template: src=../assets/template_production_no_db_scale.yml dest=../assets/template_{{ appName }}_production_set_scale.yml
+      delegate_to: localhost
+    - name: Create canary scale template
+      template: src=../assets/template_canary_no_db_scale.yml dest=../assets/template_{{ appName }}_canary_set_scale.yml
+      delegate_to: localhost
 - name: Transfer dynamic config to manager
   hosts: managers
   become: true
@@ -13,11 +23,11 @@
   tasks:
     - name: Populate dual compose template and transfer
       template:
-        src: ../assets/template_canary_no_db.yml
+        src: ../assets/template_{{ appName }}_canary_set_scale.yml
         dest: /{{ appName }}_canary.yml
     - name: Transfer new production template in case of rollback
       template:
-        src: ../assets/template_production_no_db.yml
+        src: ../assets/template_{{ appName }}_production_set_scale.yml
         dest: /{{ appName }}_production.yml
 - name: Deploy application 
   hosts: managers

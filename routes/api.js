@@ -54,4 +54,7 @@ router.delete('/destroy', validateManagerExists, clusterController.destroy);
 
 router.post('/cluster/monitor/domains', validateManagerExists, clusterController.setDomains);
 
+// Testing route
+router.get('/cluster/nodeId', clusterController.nodeId);
+
 module.exports = router;

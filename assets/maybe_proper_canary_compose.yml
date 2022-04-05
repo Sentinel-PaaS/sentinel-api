@@ -1,0 +1,51 @@
+---
+version: "3.7"
+
+services:
+  production:
+    image: dsessler7/catnip:production
+    networks:
+      - traefik-public
+    deploy:
+      mode: replicated
+      replicas: 5
+      update_config:
+        failure_action: rollback
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      labels:
+	- traefik.enable=true
+        - traefik.http.routers.catnip_rtr.rule=Host(`catnip.drewsessler.com`)
+       	# - traefik.http.routers.catnip_rtr.entrypoints=web
+        - traefik.http.routers.catnip_rtr.entrypoints=websecure
+        - traefik.http.routers.catnip_rtr.tls=true
+        - traefik.http.routers.catnip_rtr.tls.certresolver=myresolver
+       	# the port listed here MUST be the internal post listed in the image
+        - traefik.http.services.catnip_production_svc.loadbalancer.server.port=5000
+       	# Canary approach
+        - traefik.http.routers.catnip_rtr.service=catnip_weighted_svc@file
+  canary:
+    image: dsessler7/catnip:canary2
+    networks:
+      - traefik-public
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+	      - traefik.enable=true
+        - traefik.http.routers.catnip_canary_rtr.rule=Host(`catnip.drewsessler.com`)
+        - traefik.http.routers.catnip_canary_rtr.tls=true
+        - traefik.http.routers.catnip_canary_rtr.tls.certresolver=myresolver
+        - traefik.http.routers.catnip_canary_rtr.entrypoints=websecure
+        - traefik.http.services.catnip_canary_svc.loadbalancer.server.port=5000
+        - traefik.http.routers.catnip_canary_rtr.service=catnip_weighted_svc@file
+networks:
+  traefik-public:
+    driver: overlay
+    attachable: true
+    name: traefik-public
+    external: true

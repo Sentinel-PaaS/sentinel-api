@@ -5,3 +5,6 @@
   tasks:
     - name: Run swarm leave command
       command: docker swarm leave
+    - name: Get hostname
+      command: hostname
+      register: worker_hostname

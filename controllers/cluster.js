@@ -377,5 +377,17 @@ As a reminder, you will need to have all these hostnames pointing to the followi
         return 0;
       });
     });
+  },
+
+  async nodeId(req, res, next) {
+    let manager = createDockerAPIConnection();
+    let nodes = await manager.listNodes();
+    let downNodes = nodes.filter(node => node.Status.State === 'down');
+
+    // get ip address of worker that will be removed
+    let workerNumber = getWorkerCount();
+    const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
+    let workerIP = Object.keys(hosts.workers)[workerNumber - 1].split(' ')[0];
+    console.log(workerIP);
   }
 };

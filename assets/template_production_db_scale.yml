@@ -16,7 +16,7 @@ services:
       - POSTGRES_HOST={{dbHost}}
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: {{ '{{ scaleNumber }}' }}
       update_config:
         failure_action: rollback
         parallelism: 1
