@@ -25,7 +25,7 @@ router.get('/cluster/managerIP', validateAuthToken, validateManagerExists, clust
 
 // Deploy a new app (if sql file provided, it will be uploaded first)
 router.post('/apps', validateAuthToken, validateManagerExists, appsController.deploy);
-router.post('/apps/:appName/upload', validateAuthToken, validateManagerExists, appsController.upload)
+router.post('/apps/:appName/upload', validateAuthToken, validateManagerExists, appsController.upload);
 
 // Deploy a canary (currently works with just `/api/apps/randomApp/canary`)
 router.post('/apps/:appName/canary', validateAuthToken, validateManagerExists, validateProductionAppExists, appsController.canaryDeploy);
@@ -57,8 +57,5 @@ router.delete('/destroy', validateAuthToken, clusterController.destroy);
 
 // Set dashboard domains and password
 router.post('/cluster/monitor/domains', validateAuthToken, validateManagerExists, clusterController.setDomains);
-
-// Testing route
-router.get('/cluster/nodeId', clusterController.nodeId);
 
 module.exports = router;

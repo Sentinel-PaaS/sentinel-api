@@ -142,7 +142,7 @@ async function scaleDown(req, res, next) {
   const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
   let workerIP = Object.keys(hosts.workers)[workerNumber - 1].split(' ')[0];
 
-  // remove worker node from swarm
+  // Set worker node to "down"
   let playbook = new Ansible.Playbook().playbook('ansible/leave_swarm').variables({
     workerIP,
   });
@@ -281,6 +281,30 @@ module.exports = {
       } catch (error) {
         console.error(error);
       }
+
+      // Get down nodes
+      const manager = createDockerAPIConnection();
+      const nodes = await manager.listNodes();
+      const downNodes = nodes.filter(node => node.Status.State === 'down');
+
+      // Remove down nodes from swarm
+      for (const downNode of downNodes) {
+        let nodeID = downNode.ID;
+        let playbook = new Ansible.Playbook().playbook('ansible/remove_node').variables({
+          nodeID,
+        });
+        playbook.inventory('ansible/inventory/hosts');
+        playbook.forks(1);
+        playbook.on('stdout', function(data) { console.log(data.toString()); });
+        playbook.on('stderr', function(data) { console.log(data.toString()); });
+        await playbook.exec().then((successResult) => {
+          console.log("success code: ", successResult.code); // Exit code of the executed command
+          console.log("success output: ", successResult.output); // Standard output/error of the executed command
+        }).catch((error) => {
+          console.error(error);
+        });
+      }
+
       res.status(200).send("Scale down complete.");
     }
   },
@@ -383,19 +407,7 @@ module.exports = {
     });
   },
 
-  async nodeId(req, res, next) {
-    let manager = createDockerAPIConnection();
-    let nodes = await manager.listNodes();
-    let downNodes = nodes.filter(node => node.Status.State === 'down');
-
-    // get ip address of worker that will be removed
-    let workerNumber = getWorkerCount();
-    const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
-    let workerIP = Object.keys(hosts.workers)[workerNumber - 1].split(' ')[0];
-    console.log(workerIP);
-  },
-
-  async getManagerIP(req, res, next) {
+  getManagerIP(req, res, next) {
     try {
       const managerIP = getManagerIP();
       res.json({managerIP});
