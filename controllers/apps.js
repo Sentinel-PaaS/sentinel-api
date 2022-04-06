@@ -73,6 +73,17 @@ module.exports = {
           serviceID: record.ID,
         };
       });
+
+      let regexForLastPart = /(_production|_canary)/
+      let regexForFirstPart = /.*(?=_)/
+
+      result = result.map(record => {
+        if (regexForLastPart.test(record.serviceName)) {
+          record.appName = record.serviceName.match(regexForFirstPart)[0]
+        }
+        return record;
+      })
+
       res.send(result);
     }).catch(err => {
       console.error(err);
