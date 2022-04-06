@@ -1,0 +1,7 @@
+---
+- name: Remove worker node from swarm
+  hosts: managers
+  become: true
+  tasks:
+    - name: Run node rm command
+      command: docker node rm {{ nodeID }}

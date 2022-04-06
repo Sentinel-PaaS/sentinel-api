@@ -28,13 +28,13 @@ services:
         max_attempts: 5
       labels:
         - traefik.enable=true
-        - traefik.http.routers.{{ appName }}_rtr.rule=Host(`{{ hostname }}`)
-        - traefik.http.routers.{{ appName }}_rtr.entrypoints=websecure
-        - traefik.http.routers.{{ appName }}_rtr.tls=true
-        - traefik.http.routers.{{ appName }}_rtr.tls.certresolver=myresolver
+        - traefik.http.routers.{{ appName }}_production_rtr.rule=Host(`{{ hostname }}`)
+        - traefik.http.routers.{{ appName }}_production_rtr.entrypoints=websecure
+        - traefik.http.routers.{{ appName }}_production_rtr.tls=true
+        - traefik.http.routers.{{ appName }}_production_rtr.tls.certresolver=myresolver
         - traefik.http.services.{{ appName }}_production_svc.loadbalancer.server.port={{ productionPort }}
         # Canary approach
-        - traefik.http.routers.{{ appName }}_rtr.service={{ appName }}_weighted_svc@file
+        - traefik.http.routers.{{ appName }}_production_rtr.service={{ appName }}_weighted_svc@file
   canary:
     image: {{ canaryImagePath }}
     networks:
@@ -53,7 +53,12 @@ services:
       replicas: 1
       labels:
         - traefik.enable=true
+        - traefik.http.routers.{{ appName }}_canary_rtr.rule=Host(`{{ hostname }}`)
+        - traefik.http.routers.{{ appName }}_canary_rtr.entrypoints=websecure
+        - traefik.http.routers.{{ appName }}_canary_rtr.tls=true
+        - traefik.http.routers.{{ appName }}_canary_rtr.tls.certresolver=myresolver
         - traefik.http.services.{{ appName }}_canary_svc.loadbalancer.server.port={{ canaryPort }}
+        - traefik.http.routers.{{ appName }}_canary_rtr.service={{ appName }}_weighted_svc@file
 networks:
   traefik-public:
     driver: overlay

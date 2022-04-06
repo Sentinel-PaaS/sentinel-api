@@ -1,5 +1,5 @@
 ---
-- name: Remove worker node from swarm
+- name: Make worker node leave the swarm
   hosts: "{{ workerIP }}"
   become: true
   tasks:

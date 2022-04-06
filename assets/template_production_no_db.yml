@@ -8,7 +8,7 @@ services:
       - traefik-public
     deploy:
       mode: replicated
-      # replicas: 1
+      replicas: 1
       update_config:
         failure_action: rollback
         parallelism: 1
@@ -19,11 +19,11 @@ services:
         max_attempts: 5
       labels:
         - traefik.enable=true
-        - traefik.http.routers.{{ appName }}_rtr.rule=Host(`{{ hostname }}`)
-        # - traefik.http.routers.{{ appName }}_rtr.entrypoints=web
-        - traefik.http.routers.{{ appName }}_rtr.entrypoints=websecure
-        - traefik.http.routers.{{ appName }}_rtr.tls=true
-        - traefik.http.routers.{{ appName }}_rtr.tls.certresolver=myresolver
+        - traefik.http.routers.{{ appName }}_production_rtr.rule=Host(`{{ hostname }}`)
+        # - traefik.http.routers.{{ appName }}_production_rtr.entrypoints=web
+        - traefik.http.routers.{{ appName }}_production_rtr.entrypoints=websecure
+        - traefik.http.routers.{{ appName }}_production_rtr.tls=true
+        - traefik.http.routers.{{ appName }}_production_rtr.tls.certresolver=myresolver
         # the port listed here MUST be the internal post listed in the image
         - traefik.http.services.{{ appName }}_production_svc.loadbalancer.server.port={{ productionPort }}
 
