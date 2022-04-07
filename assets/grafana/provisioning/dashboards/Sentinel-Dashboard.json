@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 4475,
   "graphTooltip": 0,
-  "iteration": 1649347030877,
+  "iteration": 1649358873315,
   "links": [],
   "panels": [
     {
@@ -81,8 +81,9 @@
       "pluginVersion": "7.3.1",
       "targets": [
         {
-          "expr": "avg(traefik_service_requests_total{service=\"$service\"})",
+          "expr": "sum(increase(traefik_service_requests_total{service=\"$service\"}[5m]))",
           "format": "time_series",
+          "interval": "",
           "intervalFactor": 2,
           "legendFormat": "{{$service}} | {{method}}",
           "refId": "A"
@@ -334,6 +335,8 @@
       "interval": null,
       "legend": {
         "show": true,
+        "sort": "current",
+        "sortDesc": false,
         "values": true
       },
       "legendType": "Under graph",
@@ -372,8 +375,8 @@
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "hello_production_svc@docker",
-          "value": "hello_production_svc@docker"
+          "text": "catnip_production_svc@docker",
+          "value": "catnip_production_svc@docker"
         },
         "datasource": "Prometheus",
         "definition": "label_values(service)",
