@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 4475,
   "graphTooltip": 0,
-  "iteration": 1649244895942,
+  "iteration": 1649347030877,
   "links": [],
   "panels": [
     {
@@ -167,20 +167,6 @@
       "type": "gauge"
     },
     {
-      "collapsed": false,
-      "datasource": null,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 9
-      },
-      "id": 12,
-      "panels": [],
-      "title": "Global stats",
-      "type": "row"
-    },
-    {
       "aliasColors": {},
       "bars": false,
       "cacheTimeout": null,
@@ -219,7 +205,7 @@
         "h": 10,
         "w": 11,
         "x": 0,
-        "y": 10
+        "y": 9
       },
       "hiddenSeries": false,
       "id": 6,
@@ -251,7 +237,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(traefik_entrypoint_requests_total{entrypoint=\"websecure\"}[5m]) * 100",
+          "expr": "rate(traefik_service_requests_total{service=\"$service\"}[5m]) * 100",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -270,7 +256,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Status Codes All Apps (5m)",
+      "title": "Status Code Rate (last 5 minutes)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -342,7 +328,7 @@
         "h": 10,
         "w": 11,
         "x": 11,
-        "y": 10
+        "y": 9
       },
       "id": 7,
       "interval": null,
@@ -359,17 +345,17 @@
       "strokeWidth": 1,
       "targets": [
         {
-          "expr": "sum(rate(traefik_service_requests_total{service!=\"prometheus@docker\", service!=\"grafana@docker\"}[5m])* 100) by (service) ",
+          "expr": "sum(increase(traefik_service_requests_total{service=\"$service\"}[1h])) by (code)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "{{ service }}",
+          "legendFormat": "{{ code }}",
           "refId": "A"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Requests by App (5m)",
+      "title": "Status Code Totals (last hour)",
       "type": "grafana-piechart-panel",
       "valueName": "current"
     }
@@ -386,8 +372,8 @@
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "production_svc@docker",
-          "value": "production_svc@docker"
+          "text": "hello_production_svc@docker",
+          "value": "hello_production_svc@docker"
         },
         "datasource": "Prometheus",
         "definition": "label_values(service)",
@@ -412,8 +398,7 @@
       {
         "allValue": null,
         "current": {
-          "selected": true,
-          "tags": [],
+          "selected": false,
           "text": [
             "All"
           ],
