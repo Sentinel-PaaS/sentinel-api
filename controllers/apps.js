@@ -124,11 +124,28 @@ module.exports = {
               taskStatus: task.Status.State,
               taskStatusTimestamp: task.Status.Timestamp,
               taskSlot: task.Slot,
-              taskContainer: task.Status.ContainerStatus.ContainerID
+              taskContainer: task.Status.ContainerStatus.ContainerID,
+              taskNodeID: task.NodeID
             });
           };
         });
       });
+
+      services.forEach(service => {
+        service.servicesTasks.sort((a, b) => {
+          if (a.taskStatusTimestamp < b.taskStatusTimestamp) {
+            return 1
+          } else if (a.taskStatusTimestamp > b.taskStatusTimestamp) {
+            return -1
+          } else {
+            return 0
+          }
+        })
+      });
+
+      services.forEach(service => {
+        service.servicesTasks = service.servicesTasks.slice(0, service.serviceReplicas);
+      })
 
       let result = services;
 
