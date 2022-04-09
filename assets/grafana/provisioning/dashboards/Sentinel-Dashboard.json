@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 4475,
   "graphTooltip": 0,
-  "iteration": 1649358873315,
+  "iteration": 1649518193017,
   "links": [],
   "panels": [
     {
@@ -168,7 +168,9 @@
       "type": "gauge"
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "GET : 404": "red"
+      },
       "bars": false,
       "cacheTimeout": null,
       "dashLength": 10,
@@ -245,12 +247,6 @@
           "intervalFactor": 2,
           "legendFormat": "{{ method }} : {{code}}",
           "refId": "A"
-        },
-        {
-          "expr": "avg_over_time",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
         }
       ],
       "thresholds": [],
@@ -295,7 +291,9 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "404": "#F2495C"
+      },
       "breakPoint": "50%",
       "cacheTimeout": null,
       "combine": {
@@ -375,8 +373,8 @@
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "catnip_production_svc@docker",
-          "value": "catnip_production_svc@docker"
+          "text": "catnip_canary_svc@docker",
+          "value": "catnip_canary_svc@docker"
         },
         "datasource": "Prometheus",
         "definition": "label_values(service)",
@@ -401,7 +399,7 @@
       {
         "allValue": null,
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "All"
           ],
