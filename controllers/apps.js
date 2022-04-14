@@ -7,6 +7,21 @@ const ini = require('ini');
 // const path = require("path");
 const AXIOS = require('axios');
 const { compileFunction } = require("vm");
+const { getClusterMetrics } = require('./cluster_metrics');
+
+function pad(value) {
+  value = String(value);
+  if (value.length < 2) {
+    return "0" + value;
+  } else {
+    return value;
+  }
+}
+
+function timeStamp() {
+  var date = new Date(Date.now());
+  return `${+date.getDate()}/${+(date.getMonth()+1)}/${+date.getFullYear()}-${pad(+date.getHours())}:${pad(+date.getMinutes())}:${pad(+date.getSeconds())}`;
+}
 
 function getManagerIP() {
   const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
@@ -92,6 +107,15 @@ module.exports = {
 
   async inspectService(req, res, next) {
     const managerIP = getManagerIP();
+    let clusterMetrics;
+    
+    try {
+      let nodeMetrics = await getClusterMetrics(managerIP);
+
+      clusterMetrics = nodeMetrics;
+    } catch (err) {
+      console.log(err);
+    }
 
     let serviceName = req.params.appName;
     let regex = /.*(?=[_-])/;
@@ -143,9 +167,27 @@ module.exports = {
         })
       });
 
+      console.log("THE METRICS: ", clusterMetrics)
       services.forEach(service => {
         service.servicesTasks = service.servicesTasks.slice(0, service.serviceReplicas);
+        service.servicesTasks.forEach(task => {
+          clusterMetrics.forEach(metric => {
+            if (task.taskNodeID === metric.NodeID) {
+              task.hostNodeMetrics = {
+                diskSpace: metric.DiskSpace,
+                memorySpace: metric.MemorySpace,
+                cpuUsageAvgLast10Minutes: metric.cpuUsageAvgLast10Minutes
+              }
+            }
+          })
+          task.taskStatusTimestamp = timeStamp(task.taskStatusTimestamp);
+          delete task.taskNodeID;
+          delete task.taskContainer;
+        })
+          delete service.serviceID;
       })
+
+      
 
       let result = services;
 
@@ -181,6 +223,8 @@ module.exports = {
 // For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.`;
 //         }
 //       }
+
+
 
       let response = {
         hasCanary,
