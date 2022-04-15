@@ -167,7 +167,7 @@ module.exports = {
         })
       });
 
-      console.log("THE METRICS: ", clusterMetrics)
+      //console.log("THE METRICS: ", clusterMetrics)
       services.forEach(service => {
         service.servicesTasks = service.servicesTasks.slice(0, service.serviceReplicas);
         service.servicesTasks.forEach(task => {
@@ -201,7 +201,13 @@ module.exports = {
       // });
 
       let message = "For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.";
-      let hasCanary = result.length > 1 ? true : false;
+      let justNames = result.map(record => {
+        return record.serviceName;
+      })
+      let regexCanary = /_canary/;
+
+      console.log(justNames);
+      let hasCanary = result.length > 1 && justNames.some(element => regexCanary.test(element)) ? true : false;
 //       if (result.length > 1) {
 //         if (anyNotRunning) {
 //           message = `This service has a canary version, and there may be a problem with either an instance of the canary version, or the production version. See "taskStatus" details below.
