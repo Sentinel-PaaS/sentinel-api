@@ -9,13 +9,20 @@
     - name: Create canary scale template
       template: src=../assets/template_canary_no_db_scale.yml dest=../assets/template_{{ appName }}_canary_set_scale.yml
       delegate_to: localhost
+- name: Create template for changing traffic weights
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Create dynamic config template
+      template: src=../assets/template_dynamic_config{{ sticky }}.yml dest=../assets/template_{{ appName }}_dynamic_config.yml
+      delegate_to: localhost
 - name: Transfer dynamic config to manager
   hosts: managers
   become: true
   tasks:
     - name: Populate dynamic config template and transfer
       template:
-        src: ../assets/template_dynamic_config.yml
+        src: ../assets/template_{{ appName }}_dynamic_config.yml
         dest: /conf.d/{{ appName }}_dynamic.yml
 - name: Transfer templates to the manager
   hosts: managers

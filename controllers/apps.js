@@ -255,6 +255,8 @@ module.exports = {
     const dbPassword = req.body.dbPassword;
     const dbName = req.body.dbName;
     const dbHost = req.body.dbHost;
+    const isSticky = req.body.isSticky;
+    const sticky = isSticky ? "_sticky" : "";
 
     const manager = createDockerAPIConnection();
     const productionService = manager.getService(`${appName}_production`);
@@ -277,6 +279,7 @@ module.exports = {
         dbName,
         dbHost,
         scaleNumber,
+        sticky,
       });
     } else {
       playbook = new Ansible.Playbook().playbook('ansible/deploy_canary_no_db').variables({
@@ -289,6 +292,7 @@ module.exports = {
         canaryWeight,
         productionWeight,
         scaleNumber,
+        sticky,
       });
     }
     playbook.inventory('ansible/inventory/hosts');

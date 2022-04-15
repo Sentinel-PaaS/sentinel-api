@@ -5,5 +5,5 @@
   tasks:
     - name: Populate dynamic config template and transfer
       template:
-        src: ../assets/template_dynamic_config.yml
+        src: ../assets/template_{{ appName }}_dynamic_config.yml
         dest: /conf.d/{{ appName }}_dynamic.yml

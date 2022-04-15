@@ -7,3 +7,8 @@ http:
             weight: {{ '{{ productionWeight|default(2) }}' }} # FIXME: CHANGE DEFAULT TO 95
           - name: {{ appName }}_canary_svc@docker
             weight: {{ '{{ canaryWeight|default(1) }}' }} # FIXME: CHANGE DEFAULT TO 5
+        sticky:
+          cookie:
+            name: {{ appName }}_session
+            secure: true
+            httpOnly: true
