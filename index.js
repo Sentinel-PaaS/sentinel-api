@@ -15,6 +15,15 @@ app.get('/', function (req, res) {
   res.send('hello world');
 });
 
+app.use((err, req, res, next) => {
+  console.log(err);
+  if (res.headerSent) {
+    return next(err);
+  }
+  res.status(err.code || 500);
+  res.json({ error: err.message || "An unknown error occured" });
+});
+
 app.listen(3000);
 
 module.exports = app;

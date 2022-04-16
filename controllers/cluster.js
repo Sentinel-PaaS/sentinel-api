@@ -8,8 +8,12 @@ const fs = require("fs");
 const ini = require("ini");
 const AXIOS = require('axios');
 const HTTPS = require('https');
-const { getClusterMetrics } = require('./cluster_metrics');
+const { getClusterMetrics } = require('./clusterMetricsHelpers');
 const bcryptjs = require("bcryptjs");
+const HttpError = require("../models/httpError");
+const {
+  getManagerIP,
+  createDockerAPIConnection } = require("./clusterHelpers");
 
 function getWorkerCount() {
   let workerNumber = 0;
@@ -19,24 +23,6 @@ function getWorkerCount() {
   }
 
   return workerNumber;
-}
-
-function getManagerIP() {
-  const hosts = ini.parse(fs.readFileSync('./ansible/inventory/hosts', 'utf-8'));
-  return Object.keys(hosts.managers)[0].split(' ')[0];
-}
-
-function createDockerAPIConnection() {
-  const managerIP = getManagerIP();
-
-  return new Docker({
-    host: managerIP,
-    port: process.env.DOCKER_PORT || 2375,
-    // ca: fs.readFileSync('ca.pem'),
-    // cert: fs.readFileSync('cert.pem'),
-    // key: fs.readFileSync('~/ssh-keys/ec2-docker.pem'),
-    version: 'v1.25' // required when Docker >= v1.13, https://docs.docker.com/engine/api/version-history/
-  });
 }
 
 // Initialize Terraform
@@ -185,7 +171,22 @@ async function scaleDown(req, res, next) {
   fs.writeFileSync(`terraform/output.tf`, outputContent);
 }
 
+async function inspectNodes(req, res, next) {
+  const managerIP = getManagerIP();
+
+  try {
+    let nodeMetrics = await getClusterMetrics(managerIP);
+
+    res.json(nodeMetrics);
+  } catch (err) {
+    console.log(err);
+    next(new HttpError("Cannot get cluster metrics at this time", 404));
+  }
+}
+
 module.exports = {
+  inspectNodes,
+
   async init(req, res, next) {
     if (!req.body.email) {
       let err = new Error("Email required to configure HTTPS.");
@@ -355,18 +356,6 @@ module.exports = {
 
     fs.writeFileSync(`terraform/output.tf`, outputContent);
     res.status(200).send("Destroy complete.");
-  },
-
-  async inspectNodes(req, res, next) {
-    const managerIP = getManagerIP();
-
-    try {
-      let nodeMetrics = await getClusterMetrics(managerIP);
-
-      res.json(nodeMetrics);
-    } catch (err) {
-      console.log(err);
-    }
   },
 
   async setDomains(req, res, next) {
