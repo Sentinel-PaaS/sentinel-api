@@ -7,7 +7,7 @@ const ini = require('ini');
 // const path = require("path");
 const AXIOS = require('axios');
 const { compileFunction } = require("vm");
-const { getClusterMetrics } = require('./clusterMetricsHelpers');
+const clusterMetricsHelpers = require('./clusterMetricsHelpers');
 const HttpError = require("../models/httpError");
 const { 
   getManagerIP,
@@ -19,7 +19,31 @@ const {
   combineTasksWithNodeMetrics,
   removeExtraneousProperties,
   filterForDesiredService,
-  checkForCanary } = require("./appsHelpers");
+  checkForCanary,
+  getServicesList
+ } = require("./appsHelpers");
+ const appsHelpers = require("./appsHelpers");
+ 
+async function listServices(req, res, next) {
+  try {
+    let result = await appsHelpers.getServicesList();
+    res.send(result);
+  } catch(err) {
+    console.log(err);
+    return new HttpError("Error getting inventory", 404);
+  };
+}
+
+async function inspectService(req, res, next) {
+  let serviceName = req.params.appName;
+  try {
+    let response = await appsHelpers.getServiceInfo(serviceName);
+    res.send(response);
+  } catch (err) {
+    console.log(err);
+    next(new HttpError("Unable to get details for this service", 404));
+  }
+}
 
 async function getServiceLogs(req, res, next) {
   const managerIP = getManagerIP();
@@ -37,77 +61,9 @@ async function getServiceLogs(req, res, next) {
   }
 }
 
-function listServices(req, res, next) {
-  const managerIP = getManagerIP();
-
-  let result = AXIOS.get(`http://${managerIP}:2375/services`);
-  result.then(success => {
-    result = success.data;
-    result = result.map(record => {
-      return {
-        serviceName: record.Spec.Name,
-        serviceID: record.ID,
-      };
-    });
-
-    result = appendAppNames(result);
-
-    res.send(result);
-  }).catch(err => {
-    console.log(err);
-    next(new HttpError("Error getting inventory", 404));
-  });
-}
-
-async function inspectService(req, res, next) {
-  let serviceName = req.params.appName;
-  const managerIP = getManagerIP();
-  let nodeMetrics;
-  let tasks;
-  
-  try {
-    nodeMetrics = await getClusterMetrics(managerIP);
-  } catch (err) {
-    next(new HttpError("Unable to get details for this service", 404));
-  }
-
-  try {
-    tasks = await AXIOS.get(`http://${managerIP}:2375/tasks`);
-    tasks = tasks.data;
-  } catch (err) {
-    console.log(err);
-    next(new HttpError("Unable to get details for this service", 404));
-  }
-
-  try {
-    let services = await AXIOS.get(`http://${managerIP}:2375/services`)
-    services = services.data;
-
-    let singleService = filterForDesiredService(services, serviceName);
-    combineServicesWithTheirTasks(singleService, tasks);
-    singleService.forEach(service => {
-      combineTasksWithNodeMetrics(service.serviceTasks, nodeMetrics)
-    });
-    onlyMostRecentServiceTasks(singleService);
-    removeExtraneousProperties(singleService);
-
-    let hasCanary = checkForCanary(singleService);
-    let message = "For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.";
-
-    let response = {
-      hasCanary,
-      message,
-      data: singleService
-    };
-    res.send(response);
-  } catch (err) {
-    console.log(err);
-    next(new HttpError("Unable to get details for this service", 404));
-  }
-}
-
 module.exports = {
   getServiceLogs,
+  getServicesList,
   listServices,
   inspectService,
 

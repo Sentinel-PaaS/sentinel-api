@@ -157,7 +157,7 @@ async function getClusterNodes(managerIP) {
       Availability: node.Spec.Availability,
       // internal address does not correspond to service address given by node exporter
       // if we named the nodes themselves, we might be able to match this up
-      InternalAddr: node.Status.Addr,
+      //InternalAddr: node.Status.Addr,
       NodeID: node.ID
     };
   });

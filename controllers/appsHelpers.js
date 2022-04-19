@@ -7,7 +7,7 @@ const ini = require('ini');
 // const path = require("path");
 const AXIOS = require('axios');
 const { compileFunction } = require("vm");
-const { getClusterMetrics } = require('./clusterMetricsHelpers');
+const clusterMetricsHelpers = require('./clusterMetricsHelpers');
 const HttpError = require("../models/httpError");
 
 function getManagerIP() {
@@ -39,6 +39,11 @@ function pad(value) {
 
 function timeStamp() {
   var date = new Date(Date.now());
+  return `${+date.getDate()}/${+(date.getMonth()+1)}/${+date.getFullYear()}-${pad(+date.getHours())}:${pad(+date.getMinutes())}:${pad(+date.getSeconds())}`;
+}
+
+function convertJSONTimeStamp(jsonDateTimeString) {
+  var date = new Date(jsonDateTimeString);
   return `${+date.getDate()}/${+(date.getMonth()+1)}/${+date.getFullYear()}-${pad(+date.getHours())}:${pad(+date.getMinutes())}:${pad(+date.getSeconds())}`;
 }
 
@@ -124,7 +129,7 @@ function combineTasksWithNodeMetrics(tasksArray, nodeMetricsArray) {
 function removeExtraneousProperties(servicesArray) {
   servicesArray.forEach(service => {
     service.serviceTasks.forEach(task => {
-      task.taskStatusTimestamp = timeStamp(task.taskStatusTimestamp);
+      task.taskStatusTimestamp = convertJSONTimeStamp(task.taskStatusTimestamp);
       delete task.taskNodeID;
       delete task.taskContainer;
     })
@@ -157,6 +162,71 @@ function checkForCanary(singleServiceArray) {
   return singleServiceArray.length > 1 && justNames.some(element => regexCanary.test(element)) ? true : false;
 }
 
+async function getServicesList() {
+  const managerIP = getManagerIP();
+  try {
+    let result = await AXIOS.get(`http://${managerIP}:2375/services`);
+    //console.log(result);
+    result = result.data;
+    result = result.map(record => {
+      return {
+        serviceName: record.Spec.Name,
+        serviceID: record.ID,
+      };
+    });
+
+    result = appendAppNames(result);
+    return result;
+  } catch(err) {
+    return err
+  }
+}
+
+async function getServiceInfo(serviceName) {
+  const managerIP = getManagerIP();
+  let nodeMetrics;
+  let tasks;
+  
+  try {
+    nodeMetrics = await clusterMetricsHelpers.getClusterMetrics(managerIP);
+  } catch (err) {
+    return new HttpError("Unable to get details for this service", 404);
+  }
+
+  try {
+    tasks = await AXIOS.get(`http://${managerIP}:2375/tasks`);
+    tasks = tasks.data;
+  } catch (err) {
+    console.log(err);
+    return new HttpError("Unable to get details for this service", 404);
+  }
+
+  try {
+    let services = await AXIOS.get(`http://${managerIP}:2375/services`)
+    services = services.data;
+
+    let singleService = filterForDesiredService(services, serviceName);
+    combineServicesWithTheirTasks(singleService, tasks);
+    singleService.forEach(service => {
+      combineTasksWithNodeMetrics(service.serviceTasks, nodeMetrics)
+    });
+    onlyMostRecentServiceTasks(singleService);
+    removeExtraneousProperties(singleService);
+
+    let hasCanary = checkForCanary(singleService);
+    let message = "For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.";
+
+    let response = {
+      hasCanary,
+      message,
+      data: singleService
+    };
+    return response;
+  } catch(err) {
+    return err;
+  }
+}
+
 module.exports = {
   pad,
   timeStamp,
@@ -169,5 +239,7 @@ module.exports = {
   filterForDesiredService,
   checkForCanary,
   getManagerIP,
-  createDockerAPIConnection
+  createDockerAPIConnection,
+  getServicesList,
+  getServiceInfo
 }
