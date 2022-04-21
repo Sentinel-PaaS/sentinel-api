@@ -227,6 +227,26 @@ async function getServiceInfo(serviceName) {
   }
 }
 
+async function getServiceLogs(serviceNameToLog) {
+  const managerIP = getManagerIP();
+  try {
+    let idForLogs = await getIDForAppName(serviceNameToLog, managerIP);
+    var config = {
+      responseType: 'text',
+      responseType: 'arraybuffer',
+    responseEncoding: 'binary'
+    };
+    let result = await AXIOS.get(`http://${managerIP}:2375/services/${idForLogs}/logs?stdout=true&stderr=true`, config);
+    //let logs = result.data;
+    let logs = result.data.toString();
+    //let logs = result.data.filter(byte => byte !== 01 && byte !== 00).toString();
+    //console.log(logs);
+    return logs;
+  } catch(err) {
+    return err;
+  }
+}
+
 module.exports = {
   pad,
   timeStamp,
@@ -241,5 +261,6 @@ module.exports = {
   getManagerIP,
   createDockerAPIConnection,
   getServicesList,
-  getServiceInfo
+  getServiceInfo,
+  getServiceLogs
 }

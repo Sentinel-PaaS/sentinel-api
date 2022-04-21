@@ -30,7 +30,43 @@ function createDockerAPIConnection() {
   });
 }
 
+async function hashPassword(password) {
+  try {
+    let hashed = await bcryptjs.hash(password, 10);
+    let escapedHash = hashed.replace(/\$/g, "$$$$");
+    return escapedHash
+  } catch(err) {
+    return err;
+  }
+}
+
+async function setDomains(domainConfigs) {
+  try {
+    domainConfigs.password = await hashPassword(domainConfigs.password);
+  } catch(err) {
+    return err;
+  }
+
+  try {
+    let playbook = new Ansible.Playbook().playbook('ansible/update_monitor_domains').variables({
+      traefikHostName: domainConfigs.traefikHostName,
+      prometheusHostName: domainConfigs.prometheusHostName,
+      grafanaHostName: domainConfigs.grafanaHostName,
+      escapedHash: domainConfigs.password
+    });
+    playbook.inventory('ansible/inventory/hosts');
+    playbook.forks(1);
+    playbook.on('stdout', function(data) { console.log(data.toString()); });
+    playbook.on('stderr', function(data) { console.log(data.toString()); });
+    let successResult = await playbook.exec();
+    return successResult;
+  } catch(err) {
+    return err;
+  }
+}
+
 module.exports = {
+  setDomains,
   getManagerIP,
   createDockerAPIConnection
 }

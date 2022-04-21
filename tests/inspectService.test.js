@@ -32,7 +32,7 @@ const request = supertest(app)
 
 describe("get:/api/apps/:appName", () => {
 
-  test("getServiceInfo returns a formatted report on the applications", async () => {
+  test("getServiceInfo returns a formatted report on the desired application", async () => {
     let result = await appsHelpers.getServiceInfo("catnip");
     expect(result).toEqual(sentinelAPIResponse);
   });
@@ -53,7 +53,8 @@ describe("get:/api/apps/:appName", () => {
   });
 
   test("API success returns JSON and 200", async () => {
-    let response = await request.get("/api/apps/").query({ appName: 'catnip' });
+    let appName = "catnip";
+    let response = await request.get(`/api/apps/${appName}`);
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toEqual(expect.stringContaining('json'));
   });

@@ -9,11 +9,12 @@ const ini = require("ini");
 const AXIOS = require('axios');
 const HTTPS = require('https');
 const { getClusterMetrics } = require('./clusterMetricsHelpers');
-const bcryptjs = require("bcryptjs");
 const HttpError = require("../models/httpError");
 const {
   getManagerIP,
-  createDockerAPIConnection } = require("./clusterHelpers");
+  createDockerAPIConnection,
+  setDomains
+ } = require("./clusterHelpers");
 
 function getWorkerCount() {
   let workerNumber = 0;
@@ -184,8 +185,32 @@ async function inspectNodes(req, res, next) {
   }
 }
 
+async function postDomains(req, res, next) {
+  const managerIP = getManagerIP();
+
+  let domainConfigs = {
+    traefikHostName: req.body.traefikHostName,
+    prometheusHostName: req.body.prometheusHostName,
+    grafanaHostName: req.body.grafanaHostName,
+    password: req.body.password
+  }
+
+  try {
+    let successResult = await setDomains(domainConfigs);
+    console.log("success code: ", successResult.code); // Exit code of the executed command
+    console.log("success output: ", successResult.output); // Standard output/error of the executed command
+    res.status(200).send(`Domains successfully updated. As a reminder, you will use the username "admin" with the password you provided, and you will need to have all your provided hostnames pointing to the following IP address: ${managerIP}.`
+    );
+  } catch(err) {
+    console.log(err);
+    next(new HttpError("Unable to set domain names at this time", 404));
+  }
+  
+}
+
 module.exports = {
   inspectNodes,
+  postDomains,
 
   async init(req, res, next) {
     if (!req.body.email) {
@@ -356,44 +381,6 @@ module.exports = {
 
     fs.writeFileSync(`terraform/output.tf`, outputContent);
     res.status(200).send("Destroy complete.");
-  },
-
-  async setDomains(req, res, next) {
-    const managerIP = getManagerIP();
-
-    let traefikHostName = req.body.traefikHostName;
-    let prometheusHostName = req.body.prometheusHostName;
-    let grafanaHostName = req.body.grafanaHostName;
-    let password = req.body.password;
-
-    bcryptjs.hash(password, 10).then(hashed => {
-      // let escapedHash = hashed;
-      let escapedHash = hashed.replace(/\$/g, "$$$$");
-      //  escapedHash = escapedHash.replace(/\$\$/, "$")
-      console.log(escapedHash);
-
-      let playbook = new Ansible.Playbook().playbook('ansible/update_monitor_domains').variables({
-        traefikHostName,
-        prometheusHostName,
-        grafanaHostName,
-        escapedHash
-      });
-      playbook.inventory('ansible/inventory/hosts');
-      playbook.forks(1);
-      playbook.on('stdout', function(data) { console.log(data.toString()); });
-      playbook.on('stderr', function(data) { console.log(data.toString()); });
-      playbook.exec().then((successResult) => {
-        console.log("success code: ", successResult.code); // Exit code of the executed command
-        console.log("success output: ", successResult.output); // Standard output/error of the executed command
-        res.status(200).send(`Domains successfully updated. As a reminder, you will use the username "admin" with the password you provided, and you will need to have all your provided hostnames pointing to the following IP address: ${managerIP}.`
-        );
-        return 1;
-      }).catch((error) => {
-        console.error(error);
-        res.status(500).send(`error: ${error}`);
-        return 0;
-      });
-    });
   },
 
   getManagerIP(req, res, next) {

@@ -12,15 +12,6 @@ const HttpError = require("../models/httpError");
 const { 
   getManagerIP,
   createDockerAPIConnection,
-  getIDForAppName,
-  appendAppNames,
-  combineServicesWithTheirTasks,
-  onlyMostRecentServiceTasks, 
-  combineTasksWithNodeMetrics,
-  removeExtraneousProperties,
-  filterForDesiredService,
-  checkForCanary,
-  getServicesList
  } = require("./appsHelpers");
  const appsHelpers = require("./appsHelpers");
  
@@ -45,15 +36,11 @@ async function inspectService(req, res, next) {
   }
 }
 
-async function getServiceLogs(req, res, next) {
-  const managerIP = getManagerIP();
-
+async function showServiceLogs(req, res, next) {
   try {
     let serviceNameToLog = req.params.appName;
-    let idForLogs = await getIDForAppName(serviceNameToLog, managerIP);
-
-    let result = await AXIOS.get(`http://${managerIP}:2375/services/${idForLogs}/logs?stdout=true&stderr=true`);
-    let logs = result.data;
+    let logs = await appsHelpers.getServiceLogs(serviceNameToLog);
+    res.set("Content-Type", "text/html; charset=utf-8");
     res.send(logs);
   } catch(err) {
     console.log(err);
@@ -62,10 +49,9 @@ async function getServiceLogs(req, res, next) {
 }
 
 module.exports = {
-  getServiceLogs,
-  getServicesList,
   listServices,
   inspectService,
+  showServiceLogs,
 
   async canaryDeploy(req, res, next) {
     const appName = req.params.appName;

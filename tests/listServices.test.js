@@ -13,7 +13,7 @@ AXIOS.get.mockResolvedValue({
 
 const request = supertest(app)
 
-describe("get:/api/apps/:appName", () => {
+describe("get:/api/apps/", () => {
 
   test("getServicesList returns a formatted list of applications", async () => {
     let result = await appsHelpers.getServicesList();
@@ -32,8 +32,7 @@ describe("get:/api/apps/:appName", () => {
   });
 
   test("API success returns JSON and 200", async () => {
-    let appName = "catnip";
-    let response = await request.get(`/api/apps/${appName}`);
+    let response = await request.get("/api/apps/");
     expect(response.statusCode).toBe(200);
     expect(response.headers['content-type']).toEqual(expect.stringContaining('json'));
   });
