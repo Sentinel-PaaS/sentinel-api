@@ -7,98 +7,28 @@ const ini = require('ini');
 // const path = require("path");
 const AXIOS = require('axios');
 const { compileFunction } = require("vm");
-const { getClusterMetrics } = require('./clusterMetricsHelpers');
+const clusterMetricsHelpers = require('./clusterMetricsHelpers');
 const HttpError = require("../models/httpError");
 const { 
   getManagerIP,
   createDockerAPIConnection,
-  getIDForAppName,
-  appendAppNames,
-  combineServicesWithTheirTasks,
-  onlyMostRecentServiceTasks, 
-  combineTasksWithNodeMetrics,
-  removeExtraneousProperties,
-  filterForDesiredService,
-  checkForCanary } = require("./appsHelpers");
-
-async function getServiceLogs(req, res, next) {
-  const managerIP = getManagerIP();
-
+ } = require("./appsHelpers");
+ const appsHelpers = require("./appsHelpers");
+ 
+async function listServices(req, res, next) {
   try {
-    let serviceNameToLog = req.params.appName;
-    let idForLogs = await getIDForAppName(serviceNameToLog, managerIP);
-
-    let result = await AXIOS.get(`http://${managerIP}:2375/services/${idForLogs}/logs?stdout=true&stderr=true`);
-    let logs = result.data;
-    res.send(logs);
+    let result = await appsHelpers.getServicesList();
+    res.send(result);
   } catch(err) {
     console.log(err);
-    next(new HttpError("Unable to get logs", 404));
-  }
-}
-
-function listServices(req, res, next) {
-  const managerIP = getManagerIP();
-
-  let result = AXIOS.get(`http://${managerIP}:2375/services`);
-  result.then(success => {
-    result = success.data;
-    result = result.map(record => {
-      return {
-        serviceName: record.Spec.Name,
-        serviceID: record.ID,
-      };
-    });
-
-    result = appendAppNames(result);
-
-    res.send(result);
-  }).catch(err => {
-    console.log(err);
-    next(new HttpError("Error getting inventory", 404));
-  });
+    return new HttpError("Error getting inventory", 404);
+  };
 }
 
 async function inspectService(req, res, next) {
   let serviceName = req.params.appName;
-  const managerIP = getManagerIP();
-  let nodeMetrics;
-  let tasks;
-  
   try {
-    nodeMetrics = await getClusterMetrics(managerIP);
-  } catch (err) {
-    next(new HttpError("Unable to get details for this service", 404));
-  }
-
-  try {
-    tasks = await AXIOS.get(`http://${managerIP}:2375/tasks`);
-    tasks = tasks.data;
-  } catch (err) {
-    console.log(err);
-    next(new HttpError("Unable to get details for this service", 404));
-  }
-
-  try {
-    let services = await AXIOS.get(`http://${managerIP}:2375/services`)
-    services = services.data;
-
-    let singleService = filterForDesiredService(services, serviceName);
-    combineServicesWithTheirTasks(singleService, tasks);
-    singleService.forEach(service => {
-      combineTasksWithNodeMetrics(service.serviceTasks, nodeMetrics)
-    });
-    onlyMostRecentServiceTasks(singleService);
-    removeExtraneousProperties(singleService);
-
-    let hasCanary = checkForCanary(singleService);
-    let message = "For more information on app performance, visit the prometheus and grafana dashboards you have configured with SENTINEL METRICS, or inspect app logs with SENTINEL INSPECT LOGS. You can also view system level metrics for your compute instances with SENTINEL CLUSTER INSPECT.";
-
-    let response = {
-      hasCanary,
-      message,
-      data: singleService
-    };
+    let response = await appsHelpers.getServiceInfo(serviceName);
     res.send(response);
   } catch (err) {
     console.log(err);
@@ -106,10 +36,22 @@ async function inspectService(req, res, next) {
   }
 }
 
+async function showServiceLogs(req, res, next) {
+  try {
+    let serviceNameToLog = req.params.appName;
+    let logs = await appsHelpers.getServiceLogs(serviceNameToLog);
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.send(logs);
+  } catch(err) {
+    console.log(err);
+    next(new HttpError("Unable to get logs", 404));
+  }
+}
+
 module.exports = {
-  getServiceLogs,
   listServices,
   inspectService,
+  showServiceLogs,
 
   async canaryDeploy(req, res, next) {
     const appName = req.params.appName;
